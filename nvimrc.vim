@@ -150,7 +150,6 @@ luafile ~/.config/nvim/rcmodules/lua/nvimrc-functions.lua
 luafile ~/.config/nvim/rcmodules/lua/misc-plugins.lua
 luafile ~/.config/nvim/rcmodules/lua/snippets.lua
 luafile ~/.config/nvim/rcmodules/lua/claude_history.lua
-luafile ~/.config/nvim/rcmodules/lua/work_files.lua
 luafile ~/.config/nvim/rcmodules/lua/pudb_breakpoints.lua
 
 

@@ -135,6 +135,11 @@ Plug 'solomonxie/nvim-repo-browser', { 'branch': 'master', 'do': 'npm install &&
 "REF: https://github.com/solomonxie/nvim-lsp-tagbar
 Plug 'solomonxie/nvim-lsp-tagbar', { 'branch': 'master' }
 
+"REF: https://github.com/solomonxie/nvim-jumps
+Plug 'solomonxie/nvim-jumps', { 'branch': 'master' }
+"^ Tree of this session's jumps (gd, <C-]>, searches...), one level deeper per jump onward. Forgotten on quit.
+nnoremap <C-j> :Jumps<CR>
+
 "REF: https://github.com/hashivim/vim-terraform
 " Syntax highlighting for Terraform
 Plug 'hashivim/vim-terraform', {'commit': '520498f'}

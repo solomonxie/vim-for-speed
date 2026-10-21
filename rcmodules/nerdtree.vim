@@ -44,7 +44,7 @@ function! s:NerdTreeBufPath() abort
     let l:full = '/' . join(l:parts, '/')
     " only trust it if it's the same file
     let l:full = resolve(l:full) ==# resolve(expand('%:p')) ? l:full : expand('%:p')
-    " a work file opened by its real path: shown through the cwd checkout's link to it (tmp/), in that repo
+    " a work file opened by its real path: shown through the cwd checkout's link to it (tmp/workfiles), in that repo
     if exists('g:loaded_workfiles')
         let l:full = v:lua.require('workfiles').link_path(l:full)
     endif
@@ -56,7 +56,7 @@ endfunction
 " resolves links: a file under a link out of the repo (tmp -> ~/dot/...) got the target's repo.
 function! s:NerdTreeProjectRoot() abort
     let l:dir = empty(expand('%')) ? getcwd() : fnamemodify(s:NerdTreeBufPath(), ':h')
-    " inside a git dir (e.g. the .git/tmp_workfiles link to work files): the checkout it belongs to,
+    " inside a git dir (e.g. the .git/tmp/workfiles link to work files): the checkout it belongs to,
     " found from a worktree's gitdir file (<checkout>/.git), else the folder holding .git
     let l:wt = matchstr(l:dir, '^.*/\.git/worktrees/[^/]\+')
     if !empty(l:wt) && filereadable(l:wt . '/gitdir')

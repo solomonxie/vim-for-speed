@@ -29,7 +29,7 @@ vnoremap br "1y:bufdo %s/<C-r>1/<C-r>1/ge \| update
 " nnoremap fw /<C-r>+<CR>
 " nnoremap fw :call SearchInFile('<C-r>+')<CR>
 " Search clipboard text literally (\V: no regex; special chars and multi-line OK)
-nnoremap <silent> fw :let @/ = '\V' . substitute(escape(trim(getreg('+'), "\n", 2), '\/'), '\n', '\\n', 'g') \| call histadd('/', @/) \| set hlsearch<CR>n
+nnoremap <silent> fp :let @/ = '\V' . substitute(escape(trim(getreg('+'), "\n", 2), '\/'), '\n', '\\n', 'g') \| call histadd('/', @/) \| set hlsearch<CR>n
 
 " Centralize
 " nnoremap n nzzzv
@@ -267,7 +267,7 @@ autocmd FileType markdown nnoremap <buffer><silent> <leader>P :MarkdownPreview<C
 " --- Plugin Keys ---
 "vim/rcmodules/misc.vim
 " map <LocalLeader>d
-" plugin defaults, not set by me: m=nvim-marks (overrides built-in set-mark), ds/cs/cS/ys/yS/yss/ySs/ySS=vim-surround, S/gS(visual)/<C-s>(insert)=vim-surround, ,c/,cc/,cu=vim-commentary (gc=Claude history pane), */#(visual)=vim-visual-star-search, <Leader>bd=bclose.vim
+" plugin defaults, not set by me: m=nvim-marks (overrides built-in set-mark), ds/cs/cS/ys/yS/yss/ySs/ySS=vim-surround, S/gS(visual)/<C-s>(insert)=vim-surround, ,c/,cc/,cu=vim-commentary, */#(visual)=vim-visual-star-search, <Leader>bd=bclose.vim
 
 "vim/rcmodules/hop.vim
 " map fw

@@ -569,5 +569,80 @@ function! CloseBuffer() abort
     endif
 endfunction
 
+
+" --- GIT DIFF BASE (shared by gitgutter, NERDTree, lsptagbar) ---
+" g:git_diff_base: the commit every git view diffs against. Plugins read GitDiffBase()
+" (or the variable) and listen for `User GitDiffBaseChanged` to repaint.
+" Default: where this branch forked from main (fallback: master), so views show the
+" whole branch like a PR. Re-picked per repo/worktree on BufEnter until a ref is set by hand.
+" :ChangeGitDiffBase          -> back to the default (branch fork point, auto per repo)
+" :ChangeGitDiffBase <ref>    -> diff against any branch/tag/commit, e.g. HEAD~3, origin/develop
+" :ChangeGitDiffBase HEAD     -> uncommitted changes only
+let g:git_diff_base = get(g:, 'git_diff_base', 'HEAD')
+let s:git_diff_base_auto = 1
+autocmd BufEnter * if s:git_diff_base_auto | call s:AutoGitDiffBase() | endif
+
+function! GitDiffBase() abort
+    return empty(get(g:, 'git_diff_base', '')) ? 'HEAD' : g:git_diff_base
+endfunction
+
+function! s:AutoGitDiffBase() abort
+    if &buftype !=# ''
+        return
+    endif
+    if !exists('b:git_toplevel')
+        let b:git_toplevel = trim(system('git -C ' . shellescape(expand('%:p:h')) . ' rev-parse --show-toplevel 2>/dev/null'))
+    endif
+    if empty(b:git_toplevel) || b:git_toplevel ==# get(s:, 'git_diff_base_repo', '')
+        return
+    endif
+    let s:git_diff_base_repo = b:git_toplevel
+    let g:git_diff_base = 'HEAD'  " if no main/master here, don't keep another repo's base
+    call SetGitDiffBase('', 1)
+endfunction
+
+" ref '' = branch fork point from main/master; optional 2nd arg: quiet (no messages)
+function! SetGitDiffBase(ref, ...) abort
+    let l:quiet = a:0 && a:1
+    let s:git_diff_base_auto = empty(a:ref)
+    let l:git = 'git -C ' . shellescape(expand('%:p:h')) . ' '
+    let l:ref = a:ref
+    if empty(l:ref)
+        for l:candidate in ['main', 'master', 'origin/main', 'origin/master']
+            call system(l:git . 'rev-parse --verify --quiet ' . shellescape(l:candidate))
+            if v:shell_error == 0
+                let l:ref = l:candidate
+                break
+            endif
+        endfor
+        if empty(l:ref)
+            if !l:quiet | echohl ErrorMsg | echo 'ChangeGitDiffBase: no main/master branch found' | echohl None | endif
+            return
+        endif
+        let l:base = trim(system(l:git . 'merge-base HEAD ' . shellescape(l:ref)))
+        let l:label = 'merge-base with ' . l:ref
+    else
+        let l:base = trim(system(l:git . 'rev-parse --verify --quiet ' . shellescape(l:ref)))
+        let l:label = l:ref
+    endif
+    if v:shell_error != 0 || empty(l:base)
+        if !l:quiet | echohl ErrorMsg | echo 'ChangeGitDiffBase: invalid ref: ' . l:ref | echohl None | endif
+        return
+    endif
+    let g:git_diff_base = l:base
+    if exists('#User#GitDiffBaseChanged')
+        doautocmd <nomodeline> User GitDiffBaseChanged
+    endif
+    if !l:quiet
+        echo 'Git diff base: ' . l:label . ' (' . l:base[:7] . ')'
+    endif
+endfunction
+
+function! GitRefComplete(arglead, cmdline, cursorpos) abort
+    let l:refs = systemlist('git -C ' . shellescape(expand('%:p:h')) . ' for-each-ref --format="%(refname:short)" refs/heads refs/remotes refs/tags')
+    return filter(['HEAD'] + l:refs, 'v:val =~# "^" . escape(a:arglead, "\\.^$~[]*")')
+endfunction
+
+
 " ============= End of File ==================
 echom 'Loaded ' . expand('<sfile>:t') |redraw

@@ -77,8 +77,10 @@ Plug 'bronson/vim-visual-star-search', {'commit': '7c32edb'}
 
 "REF: https://github.com/tpope/vim-commentary
 Plug 'tpope/vim-commentary', {'commit': '64a654e'}  "Blazing fast!!
-" On ,c instead of gc, same as the Neovim config (gc opens its Claude history pane). Mapping <Plug>Commentary here,
-" before the plugin loads, stops it from adding its own gc maps.
+" On ,c instead of gc, same as the Neovim config.
+" The plugin adds its own gc/gcc/gcu maps unless gc is taken, so gc is held by a <Nop>
+" (it also replaces nvim's built-in gc).
+nnoremap gc <Nop>
 xmap <leader>c  <Plug>Commentary
 nmap <leader>c  <Plug>Commentary
 omap <leader>c  <Plug>Commentary
@@ -367,7 +369,7 @@ let NERDTreeDirArrows=1    " Display arrows instead of ascii art in NERDTree
 let NERDTreeHighlightCursorline = 1  "Conflict with other addon-plugins for nerdtree
 "let NERDTreeChDirMode=2    " Change current working directory based on root directory in NERDTree
 let g:NERDTreeHidden=1     " Don't show hidden files
-let NERDTreeWinSize=40     " Initial NERDTree width
+let NERDTreeWinSize=50     " Initial NERDTree width
 let NERDTreeAutoDeleteBuffer = 1  " Auto delete buffer deleted with NerdTree
 "let NERDTreeShowBookmarks=0   " Show NERDTree bookmarks
 let NERDTreeIgnore = ['\.pyc$', '\.swp', '\.swo', '__pycache__', 'node_modules']   " Hide temp files in NERDTree
@@ -407,39 +409,6 @@ function! SafeNERDTreeQuit() abort
 endfunction
 autocmd FileType nerdtree nnoremap <buffer> q :call SafeNERDTreeQuit()<CR>
 
-" Dim the tree while another window has focus, so its cursorline doesn't
-" compete with the file window's. NERDTree opens files under eventignore=all
-" (no WinLeave/WinEnter), so sync on SafeState, which fires on every idle.
-function! s:NerdTreeDimColors() abort
-    highlight default NERDTreeDim ctermfg=241 ctermbg=232 guifg=#666462 guibg=#141413
-    highlight default NERDTreeDimDirty ctermfg=64 ctermbg=232 guifg=#5f8700 guibg=#141413
-    highlight default NERDTreeDimCursorLine ctermfg=NONE ctermbg=234 guibg=#1c1c1c
-endfunction
-call s:NerdTreeDimColors()
-autocmd ColorScheme * call s:NerdTreeDimColors()
-
-let s:nerdtree_dim_groups = ['Normal', 'NormalNC', 'EndOfBuffer', 'Directory',
-            \ 'NERDTreeDir', 'NERDTreeUp', 'NERDTreeFile', 'NERDTreeCWD', 'NERDTreeExecFile',
-            \ 'NERDTreeOpenable', 'NERDTreeClosable', 'NERDTreeDirSlash',
-            \ 'NERDTreeLinkFile', 'NERDTreeLinkDir', 'NERDTreeLinkTarget']
-let s:nerdtree_dim_hl = join(map(copy(s:nerdtree_dim_groups), 'v:val . ":NERDTreeDim"'), ',')
-            \ . ',NERDTreeGitDirtyFile:NERDTreeDimDirty,NERDTreeGitDirtyDir:NERDTreeDimDirty'
-            \ . ',CursorLine:NERDTreeDimCursorLine'
-
-function! s:NerdTreeSyncDim() abort
-    if !exists('g:NERDTree') || !g:NERDTree.IsOpen()
-        return
-    endif
-    let l:treeWin = win_getid(g:NERDTree.GetWinNum())
-    let l:wanted = l:treeWin ==# win_getid() ? '' : s:nerdtree_dim_hl
-    if getwinvar(l:treeWin, '&winhighlight') !=# l:wanted
-        call setwinvar(l:treeWin, '&winhighlight', l:wanted)
-    endif
-endfunction
-if exists('##SafeState')
-    autocmd SafeState * call s:NerdTreeSyncDim()
-endif
-
 " Pin the side tree to its window: = - :bn :bp would swap a file into it.
 " Only for the side (tab) tree -- a window tree replaces itself by design.
 function! s:PinNerdTreeWindow() abort
@@ -472,8 +441,8 @@ function! s:NerdTreeAutoRefresh(timer) abort
     silent! call s:NerdTreeGitHighlight()
 endfunction
 
-" Highlight dirty files/folders in NERDTree. Base follows :ChangeGitDiffBase
-" (g:gitgutter_diff_base), default HEAD. Git is re-queried at most every 3s.
+" Highlight dirty files/folders in NERDTree. Base is GitDiffBase()
+" (FUNCTIONS section), default HEAD. Git is re-queried at most every 3s.
 " Own colors rather than Diff* links: badwolf's DiffChange is a near-invisible bg
 function! s:NerdTreeGitHighlightColors() abort
     highlight default NERDTreeGitDirtyFile cterm=bold ctermfg=154 gui=bold guifg=#aeee00
@@ -486,8 +455,7 @@ let s:git_dirty_key = ''
 let s:git_dirty_at = 0.0
 
 function! s:NerdTreeGitDirtySet(root) abort
-    let l:base = get(g:, 'gitgutter_diff_base', '')
-    let l:base = empty(l:base) ? 'HEAD' : l:base
+    let l:base = exists('*GitDiffBase') ? GitDiffBase() : 'HEAD'
     let l:key = a:root . '@' . l:base
     if l:key ==# s:git_dirty_key && reltimefloat(reltime()) - s:git_dirty_at < 3
         return s:git_dirty
@@ -595,7 +563,7 @@ endif
 " Open/close re-renders the buffer and shifts lines; re-highlight right away
 " instead of waiting for the next timer tick (git set is cached, so this is cheap)
 autocmd TextChanged NERD_tree_* silent! call s:NerdTreeGitHighlight()
-" :ChangeGitDiffBase (gitgutter.vim) -- drop the cached git set and repaint now
+" :ChangeGitDiffBase (FUNCTIONS section) -- drop the cached git set and repaint now
 autocmd User GitDiffBaseChanged let s:git_dirty_key = '' | silent! call s:NerdTreeGitHighlight()
 
 
@@ -1088,48 +1056,8 @@ nnoremap gP :GitGutterPreviewHunk<CR>
 " nnoremap gp :GitGutterPrevHunk<CR>
 " nnoremap gP :GitGutterPreviewHunk<CR>
 
-" :ChangeGitDiffBase          -> diff against where this branch forked from main (fallback: master)
-" :ChangeGitDiffBase <ref>    -> diff against any branch/tag/commit, e.g. HEAD~3, origin/develop
-" :ChangeGitDiffBase HEAD     -> back to default (uncommitted changes only)
-command! -nargs=? -complete=customlist,s:GitRefComplete ChangeGitDiffBase call s:ChangeGitDiffBase(<q-args>)
-
-function! s:ChangeGitDiffBase(ref) abort
-    let l:git = 'git -C ' . shellescape(expand('%:p:h')) . ' '
-    let l:ref = a:ref
-    if empty(l:ref)
-        for l:candidate in ['main', 'master', 'origin/main', 'origin/master']
-            call system(l:git . 'rev-parse --verify --quiet ' . shellescape(l:candidate))
-            if v:shell_error == 0
-                let l:ref = l:candidate
-                break
-            endif
-        endfor
-        if empty(l:ref)
-            echohl ErrorMsg | echo 'ChangeGitDiffBase: no main/master branch found' | echohl None
-            return
-        endif
-        let l:base = trim(system(l:git . 'merge-base HEAD ' . shellescape(l:ref)))
-        let l:label = 'merge-base with ' . l:ref
-    else
-        let l:base = trim(system(l:git . 'rev-parse --verify --quiet ' . shellescape(l:ref)))
-        let l:label = l:ref
-    endif
-    if v:shell_error != 0 || empty(l:base)
-        echohl ErrorMsg | echo 'ChangeGitDiffBase: invalid ref: ' . l:ref | echohl None
-        return
-    endif
-    let g:gitgutter_diff_base = l:base
-    GitGutterAll
-    if exists('#User#GitDiffBaseChanged')
-        doautocmd <nomodeline> User GitDiffBaseChanged
-    endif
-    echo 'Git diff base: ' . l:label . ' (' . l:base[:7] . ')'
-endfunction
-
-function! s:GitRefComplete(arglead, cmdline, cursorpos) abort
-    let l:refs = systemlist('git -C ' . shellescape(expand('%:p:h')) . ' for-each-ref --format="%(refname:short)" refs/heads refs/remotes refs/tags')
-    return filter(['HEAD'] + l:refs, 'v:val =~# "^" . escape(a:arglead, "\\.^$~[]*")')
-endfunction
+" Diff base comes from g:git_diff_base (see GitDiffBase() in the FUNCTIONS section)
+autocmd User GitDiffBaseChanged let g:gitgutter_diff_base = GitDiffBase() | silent! GitGutterAll
 
 " Aoivd hanging when loading big files
 autocmd BufEnter * call Disable_plugins()
@@ -1694,6 +1622,80 @@ function! SendContextToAI(...) range
 endfunction
 
 
+" --- GIT DIFF BASE (shared by gitgutter, NERDTree, lsptagbar) ---
+" g:git_diff_base: the commit every git view diffs against. Plugins read GitDiffBase()
+" (or the variable) and listen for `User GitDiffBaseChanged` to repaint.
+" Default: where this branch forked from main (fallback: master), so views show the
+" whole branch like a PR. Re-picked per repo/worktree on BufEnter until a ref is set by hand.
+" :ChangeGitDiffBase          -> back to the default (branch fork point, auto per repo)
+" :ChangeGitDiffBase <ref>    -> diff against any branch/tag/commit, e.g. HEAD~3, origin/develop
+" :ChangeGitDiffBase HEAD     -> uncommitted changes only
+let g:git_diff_base = get(g:, 'git_diff_base', 'HEAD')
+let s:git_diff_base_auto = 1
+autocmd BufEnter * if s:git_diff_base_auto | call s:AutoGitDiffBase() | endif
+
+function! GitDiffBase() abort
+    return empty(get(g:, 'git_diff_base', '')) ? 'HEAD' : g:git_diff_base
+endfunction
+
+function! s:AutoGitDiffBase() abort
+    if &buftype !=# ''
+        return
+    endif
+    if !exists('b:git_toplevel')
+        let b:git_toplevel = trim(system('git -C ' . shellescape(expand('%:p:h')) . ' rev-parse --show-toplevel 2>/dev/null'))
+    endif
+    if empty(b:git_toplevel) || b:git_toplevel ==# get(s:, 'git_diff_base_repo', '')
+        return
+    endif
+    let s:git_diff_base_repo = b:git_toplevel
+    let g:git_diff_base = 'HEAD'  " if no main/master here, don't keep another repo's base
+    call SetGitDiffBase('', 1)
+endfunction
+
+" ref '' = branch fork point from main/master; optional 2nd arg: quiet (no messages)
+function! SetGitDiffBase(ref, ...) abort
+    let l:quiet = a:0 && a:1
+    let s:git_diff_base_auto = empty(a:ref)
+    let l:git = 'git -C ' . shellescape(expand('%:p:h')) . ' '
+    let l:ref = a:ref
+    if empty(l:ref)
+        for l:candidate in ['main', 'master', 'origin/main', 'origin/master']
+            call system(l:git . 'rev-parse --verify --quiet ' . shellescape(l:candidate))
+            if v:shell_error == 0
+                let l:ref = l:candidate
+                break
+            endif
+        endfor
+        if empty(l:ref)
+            if !l:quiet | echohl ErrorMsg | echo 'ChangeGitDiffBase: no main/master branch found' | echohl None | endif
+            return
+        endif
+        let l:base = trim(system(l:git . 'merge-base HEAD ' . shellescape(l:ref)))
+        let l:label = 'merge-base with ' . l:ref
+    else
+        let l:base = trim(system(l:git . 'rev-parse --verify --quiet ' . shellescape(l:ref)))
+        let l:label = l:ref
+    endif
+    if v:shell_error != 0 || empty(l:base)
+        if !l:quiet | echohl ErrorMsg | echo 'ChangeGitDiffBase: invalid ref: ' . l:ref | echohl None | endif
+        return
+    endif
+    let g:git_diff_base = l:base
+    if exists('#User#GitDiffBaseChanged')
+        doautocmd <nomodeline> User GitDiffBaseChanged
+    endif
+    if !l:quiet
+        echo 'Git diff base: ' . l:label . ' (' . l:base[:7] . ')'
+    endif
+endfunction
+
+function! GitRefComplete(arglead, cmdline, cursorpos) abort
+    let l:refs = systemlist('git -C ' . shellescape(expand('%:p:h')) . ' for-each-ref --format="%(refname:short)" refs/heads refs/remotes refs/tags')
+    return filter(['HEAD'] + l:refs, 'v:val =~# "^" . escape(a:arglead, "\\.^$~[]*")')
+endfunction
+
+
 " ==================== COMMANDS ====================
 "----------------------------------------------------------------------------------------"
 "|       __     ___              ____                                          _        |"
@@ -1745,6 +1747,7 @@ endfunction
     command! GithubLinkCurrentLine call GithubLinkCurrentLine()
     command! GitOpen call GitOpen()
     command! OpenChangedFiles call EditChangedFiles()
+    command! -nargs=? -complete=customlist,GitRefComplete ChangeGitDiffBase call SetGitDiffBase(<q-args>)
 "}
 
 
@@ -1820,7 +1823,7 @@ vnoremap br "1y:bufdo %s/<C-r>1/<C-r>1/ge \| update
 " nnoremap fw /<C-r>+<CR>
 " nnoremap fw :call SearchInFile('<C-r>+')<CR>
 " Search clipboard text literally (\V: no regex; special chars and multi-line OK)
-nnoremap <silent> fw :let @/ = '\V' . substitute(escape(trim(getreg('+'), "\n", 2), '\/'), '\n', '\\n', 'g') \| call histadd('/', @/) \| set hlsearch<CR>n
+nnoremap <silent> fp :let @/ = '\V' . substitute(escape(trim(getreg('+'), "\n", 2), '\/'), '\n', '\\n', 'g') \| call histadd('/', @/) \| set hlsearch<CR>n
 
 " Centralize
 " nnoremap n nzzzv

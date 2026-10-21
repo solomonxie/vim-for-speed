@@ -1,6 +1,6 @@
 -- Browse Claude Code session history of the current repo in nvim.
 --
---   gc / :ClaudeHistory   toggle the history pane: every session of this repo, from any of its worktrees, as a
+--   :ClaudeHistory        toggle the history pane: every session of this repo, from any of its worktrees, as a
 --                         folded tree: repo -> worktree -> worktrees made from it (a plan's impl worktrees)
 --                         -> session -> your prompts. Opens at your newest session in the worktree you're in.
 --   :ClaudeHistory!       same, for every project
@@ -15,7 +15,7 @@
 --   <CR> / <Space> / o   open / close a worktree or a session's prompts
 --   p          up to the parent row
 --   <CR> on a prompt     close the pane and jump into the transcript at it
---   q / gc     close
+--   q / ft     close
 --   ?          show / hide help at the top of the pane (keys, commands, how it works); q also hides it
 --
 -- Each session <id>.jsonl is rendered right next to it as <yyyymmdd>-<HHMM>-<folder>-<title>.md, and re-rendered
@@ -903,7 +903,7 @@ local HELP = {
     '  <CR> / <Space> / o open / close a worktree, or a session\'s prompts',
     '  <CR> on a prompt   close the pane and jump into the transcript at it',
     '  p                  up to the parent row (prompt -> session -> worktree)',
-    '  q / gc / ft        close the pane',
+    '  q / ft            close the pane',
     '  ?                  show / hide this help (q also hides it)',
     '',
     '  ● / ○              session running / not running',
@@ -925,7 +925,7 @@ local HELP = {
     '  q                  close the transcript',
     '',
     'Commands',
-    '  gc / :ClaudeHistory     this repo\'s sessions, as a tree of its worktrees',
+    '  :ClaudeHistory          this repo\'s sessions, as a tree of its worktrees',
     '  :ClaudeHistory!         every project\'s sessions',
     '  :ClaudeHistoryGrep[!]   fzf search through every prompt typed here (! every project)',
     '  :ClaudeSend[!] / ,k     send <file>:L<lines> + a prompt to a running session in tmux',
@@ -1188,7 +1188,7 @@ function M.pane_toggle(all)
             if up.level > 0 and up.level < it.level then return vim.api.nvim_win_set_cursor(0, { i, 0 }) end
         end
     end, o)
-    for _, k in ipairs({ 'gc', 'ft' }) do vim.keymap.set('n', k, M.pane_close, o) end
+    vim.keymap.set('n', 'ft', M.pane_close, o)
     vim.keymap.set('n', 'q', function() if pane.help then toggle_help() else M.pane_close() end end, o)
     vim.keymap.set('n', '?', toggle_help, o)
     -- Scheduled: autocmds don't nest, so loading the transcript from inside CursorMoved
@@ -1260,7 +1260,6 @@ vim.api.nvim_create_user_command('ClaudeHistory', function(o) M.pane_toggle(o.ba
 vim.api.nvim_create_user_command('ClaudeHistoryGrep', function(o) M.grep_prompts(o.bang) end, { bang = true })
 -- nvim's built-in commenting also lives on gc/gcc; commenting is on ,c (vim-commentary, see misc.vim)
 for _, m in ipairs({ { 'n', 'gcc' }, { 'x', 'gc' }, { 'o', 'gc' } }) do pcall(vim.keymap.del, m[1], m[2]) end
-vim.keymap.set('n', 'gc', function() M.pane_toggle(false) end, { silent = true, nowait = true, desc = 'Claude history pane' })
 vim.api.nvim_create_user_command('ClaudeSend', function(o) M.send(o.line1, o.line2, true, o.bang) end, { range = true, bang = true })
 vim.keymap.set('n', '<leader>k', function() M.send(vim.fn.line('.'), vim.fn.line('.')) end,
     { silent = true, desc = 'Send file:line + prompt to Claude' })

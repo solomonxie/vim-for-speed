@@ -73,6 +73,7 @@ end
 
 -- Src: vim/rcmodules/misc.vim
 if string.find(vim.o['runtimepath'], 'nvim%-marks') then
+    -- Marks folder: g:nvim_marks_dir in ~/.vimrc-local.vim
     require('nvim-marks').setup()
 end
 

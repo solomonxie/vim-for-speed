@@ -43,25 +43,35 @@ function! s:NerdTreeBufPath() abort
     endfor
     let l:full = '/' . join(l:parts, '/')
     " only trust it if it's the same file
-    return resolve(l:full) ==# resolve(expand('%:p')) ? l:full : expand('%:p')
+    let l:full = resolve(l:full) ==# resolve(expand('%:p')) ? l:full : expand('%:p')
+    " a work file opened by its real path: shown through the cwd checkout's link to it (tmp/), in that repo
+    if exists('g:loaded_workfiles')
+        let l:full = v:lua.require('workfiles').link_path(l:full)
+    endif
+    return l:full
 endfunction
 
-" Git root of the current file as reached through its path, else the cwd. git reports the
-" resolved toplevel, so it's mapped back: the root is the same number of levels up the
-" unresolved path as the toplevel is up the resolved one.
+" Git root of the current file as reached through its path, else the cwd: the nearest folder up
+" the unresolved path with a .git (a folder, or a file in a worktree). Not git rev-parse, which
+" resolves links: a file under a link out of the repo (tmp -> ~/dot/...) got the target's repo.
 function! s:NerdTreeProjectRoot() abort
     let l:dir = empty(expand('%')) ? getcwd() : fnamemodify(s:NerdTreeBufPath(), ':h')
-    let l:root = trim(system('git -C ' . shellescape(l:dir) . ' rev-parse --show-toplevel'))
-    if v:shell_error != 0 || !isdirectory(l:root)
-        return getcwd()
+    " inside a git dir (e.g. the .git/tmp_workfiles link to work files): the checkout it belongs to,
+    " found from a worktree's gitdir file (<checkout>/.git), else the folder holding .git
+    let l:wt = matchstr(l:dir, '^.*/\.git/worktrees/[^/]\+')
+    if !empty(l:wt) && filereadable(l:wt . '/gitdir')
+        return fnamemodify(trim(readfile(l:wt . '/gitdir', '', 1)[0]), ':h')
     endif
-    let l:up = len(split(resolve(l:dir), '/')) - len(split(l:root, '/'))
-    let l:mapped = l:dir
-    for _ in range(max([l:up, 0]))
-        let l:mapped = fnamemodify(l:mapped, ':h')
-    endfor
-    " only when the mapping lands on the same dir (a symlink deeper down could break the count)
-    return resolve(l:mapped) ==# l:root ? l:mapped : l:root
+    if l:dir =~# '/\.git\(/\|$\)'
+        return matchstr(l:dir, '^.\{-}\ze/\.git\(/\|$\)')
+    endif
+    while l:dir !=# '/'
+        if isdirectory(l:dir . '/.git') || filereadable(l:dir . '/.git')
+            return l:dir
+        endif
+        let l:dir = fnamemodify(l:dir, ':h')
+    endwhile
+    return getcwd()
 endfunction
 
 " g:NERDTree and friends exist only once the lazy-loaded plugin is in
@@ -139,7 +149,7 @@ autocmd User nerdtree ++once call g:NERDTreePathNotifier.AddListener('init', fun
             \ | call g:NERDTreePathNotifier.AddListener('refresh', function('s:NerdTreeNotExecutable'))
 "let NERDTreeChDirMode=2    " Change current working directory based on root directory in NERDTree
 let g:NERDTreeHidden=1     " Don't show hidden files
-let NERDTreeWinSize=40     " Initial NERDTree width
+let NERDTreeWinSize=50     " Initial NERDTree width
 let NERDTreeAutoDeleteBuffer = 1  " Auto delete buffer deleted with NerdTree
 "let NERDTreeShowBookmarks=0   " Show NERDTree bookmarks
 let NERDTreeIgnore = ['\.pyc$', '\.swp', '\.swo', '__pycache__', 'node_modules']   " Hide temp files in NERDTree
@@ -179,42 +189,6 @@ function! SafeNERDTreeQuit() abort
 endfunction
 autocmd FileType nerdtree nnoremap <buffer> q :call SafeNERDTreeQuit()<CR>
 
-" Dim the tree while another window has focus, so its cursorline doesn't
-" compete with the file window's. NERDTree opens files under eventignore=all
-" (no WinLeave/WinEnter), so sync on SafeState, which fires on every idle.
-function! s:NerdTreeDimColors() abort
-    highlight default NERDTreeDim ctermfg=241 ctermbg=232 guifg=#666462 guibg=#141413
-    highlight default NERDTreeDimDirty ctermfg=64 ctermbg=232 guifg=#5f8700 guibg=#141413
-    highlight default NERDTreeDimIgnored ctermfg=238 ctermbg=232 guifg=#444444 guibg=#141413
-    highlight default NERDTreeDimCursorLine ctermfg=NONE ctermbg=234 guibg=#1c1c1c
-endfunction
-call s:NerdTreeDimColors()
-autocmd ColorScheme * call s:NerdTreeDimColors()
-
-let s:nerdtree_dim_groups = ['Normal', 'NormalNC', 'EndOfBuffer', 'Directory',
-            \ 'NERDTreeDir', 'NERDTreeUp', 'NERDTreeFile', 'NERDTreeCWD', 'NERDTreeExecFile',
-            \ 'NERDTreeOpenable', 'NERDTreeClosable', 'NERDTreeDirSlash',
-            \ 'NERDTreeLinkFile', 'NERDTreeLinkDir', 'NERDTreeLinkTarget']
-let s:nerdtree_dim_hl = join(map(copy(s:nerdtree_dim_groups), 'v:val . ":NERDTreeDim"'), ',')
-            \ . ',NERDTreeGitDirtyFile:NERDTreeDimDirty,NERDTreeGitDirtyDir:NERDTreeDimDirty'
-            \ . ',NERDTreeGitIgnored:NERDTreeDimIgnored'
-            \ . ',NERDTreeSymlink:NERDTreeDim,NERDTreeExec:NERDTreeDim'
-            \ . ',CursorLine:NERDTreeDimCursorLine'
-
-function! s:NerdTreeSyncDim() abort
-    if !exists('g:NERDTree') || !g:NERDTree.IsOpen()
-        return
-    endif
-    let l:treeWin = win_getid(g:NERDTree.GetWinNum())
-    let l:wanted = l:treeWin ==# win_getid() ? '' : s:nerdtree_dim_hl
-    if getwinvar(l:treeWin, '&winhighlight') !=# l:wanted
-        call setwinvar(l:treeWin, '&winhighlight', l:wanted)
-    endif
-endfunction
-if exists('##SafeState')
-    autocmd SafeState * call s:NerdTreeSyncDim()
-endif
-
 " Pin the side tree to its window: = - :bn :bp would swap a file into it.
 " Only for the side (tab) tree -- a window tree replaces itself by design.
 function! s:PinNerdTreeWindow() abort
@@ -233,7 +207,7 @@ autocmd BufWinEnter NERD_tree_tab_* call s:PinNerdTreeWindow()
 " a new window takes the global 0 (markdown.lua) and shows the ^G delimiters
 autocmd BufWinEnter,WinEnter NERD_tree_* setlocal conceallevel=2 concealcursor=nvic
 
-" Auto-refresh NERDTree root every second, replacing manual R press.
+" Auto-refresh NERDTree root every 10 seconds, replacing manual R press.
 " Timer only runs while the NERDTree buffer is open.
 let s:nerdtree_refresh_timer = -1
 
@@ -255,8 +229,8 @@ function! s:NerdTreeAutoRefresh(timer) abort
     silent! call s:NerdTreeGitHighlight()
 endfunction
 
-" Highlight dirty files/folders in NERDTree, and grey out git-ignored ones. Base follows
-" :ChangeGitDiffBase (g:gitgutter_diff_base), default HEAD. Git is re-queried at most every 3s.
+" Highlight dirty files/folders in NERDTree, and grey out git-ignored ones. Base is
+" GitDiffBase() (vimrc-functions.vim), default HEAD. Git is re-queried at most every 3s.
 " Own colors rather than Diff* links: badwolf's DiffChange is a near-invisible bg
 function! s:NerdTreeGitHighlightColors() abort
     highlight default NERDTreeGitDirtyFile cterm=bold ctermfg=154 gui=bold guifg=#aeee00
@@ -277,8 +251,7 @@ let s:git_dirty_at = 0.0
 let s:git_ignored_ns = has('nvim') ? nvim_create_namespace('nerdtree_git_ignored') : -1
 
 function! s:NerdTreeGitDirtySet(root) abort
-    let l:base = get(g:, 'gitgutter_diff_base', '')
-    let l:base = empty(l:base) ? 'HEAD' : l:base
+    let l:base = exists('*GitDiffBase') ? GitDiffBase() : 'HEAD'
     let l:key = a:root . '@' . l:base
     if l:key ==# s:git_dirty_key && reltimefloat(reltime()) - s:git_dirty_at < 3
         return s:git_dirty
@@ -407,7 +380,7 @@ endfunction
 
 function! s:StartNerdTreeAutoRefresh() abort
     if s:nerdtree_refresh_timer ==# -1
-        let s:nerdtree_refresh_timer = timer_start(1000, function('s:NerdTreeAutoRefresh'), {'repeat': -1})
+        let s:nerdtree_refresh_timer = timer_start(10000, function('s:NerdTreeAutoRefresh'), {'repeat': -1})
     endif
 endfunction
 
@@ -427,7 +400,7 @@ endif
 " Open/close re-renders the buffer and shifts lines; re-highlight right away
 " instead of waiting for the next timer tick (git set is cached, so this is cheap)
 autocmd TextChanged NERD_tree_* silent! call s:NerdTreeGitHighlight()
-" :ChangeGitDiffBase (gitgutter.vim) -- drop the cached git set and repaint now
+" :ChangeGitDiffBase (vimrc-functions.vim) -- drop the cached git set and repaint now
 autocmd User GitDiffBaseChanged let s:git_dirty_key = '' | silent! call s:NerdTreeGitHighlight()
 
 

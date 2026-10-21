@@ -89,4 +89,7 @@ require('nvim-treesitter.configs').setup({
     -- (Playground removed as it is deprecated)
 })
 
+-- .jsonl (one JSON value per line) is highlighted by the json parser
+vim.treesitter.language.register('json', 'jsonl')
+
 -- Syntax Highlights are handled in vim/vimrc-ui.vim

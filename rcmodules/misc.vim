@@ -15,8 +15,10 @@ Plug 'bronson/vim-visual-star-search', {'commit': '7c32edb'}
 
 "REF: https://github.com/tpope/vim-commentary
 Plug 'tpope/vim-commentary', {'commit': '64a654e'}  "Blazing fast!!
-" On ,c instead of gc (gc opens the Claude history pane). Mapping <Plug>Commentary here,
-" before the plugin loads, stops it from adding its own gc maps.
+" On ,c instead of gc.
+" The plugin adds its own gc/gcc/gcu maps unless gc is taken, so gc is held by a <Nop>
+" (it also replaces nvim's built-in gc).
+nnoremap gc <Nop>
 xmap <leader>c  <Plug>Commentary
 nmap <leader>c  <Plug>Commentary
 omap <leader>c  <Plug>Commentary
@@ -122,7 +124,7 @@ Plug 'kizza/actionmenu.nvim', {'commit': 'e8d547b'}  "Popup Context Menu
 
 "REF: https://github.com/solomonxie/nvim-marks
 Plug 'solomonxie/nvim-marks', { 'branch': 'master' }
-"^ Marks saved to <g:nvim_marks_dir>/<repo>/marks-history.json, set in ~/.vimrc-local.vim
+"^ Marks saved to <g:nvim_marks_dir>/<repo>/marks.jsonl, set in ~/.vimrc-local.vim
 
 "REF: https://github.com/solomonxie/nvim-workfiles
 Plug 'solomonxie/nvim-workfiles', { 'branch': 'master' }
@@ -135,10 +137,10 @@ Plug 'solomonxie/nvim-repo-browser', { 'branch': 'master', 'do': 'npm install &&
 "REF: https://github.com/solomonxie/nvim-lsp-tagbar
 Plug 'solomonxie/nvim-lsp-tagbar', { 'branch': 'master' }
 
+"Tree of this session's jumps (gd, <C-]>, searches...), one level deeper per jump onward. Forgotten on quit.
 "REF: https://github.com/solomonxie/nvim-jumps
-Plug 'solomonxie/nvim-jumps', { 'branch': 'master' }
-"^ Tree of this session's jumps (gd, <C-]>, searches...), one level deeper per jump onward. Forgotten on quit.
-nnoremap <C-j> :Jumps<CR>
+" Plug 'solomonxie/nvim-jumps', { 'branch': 'master' }
+" nnoremap <C-j> :Jumps<CR>
 
 "REF: https://github.com/hashivim/vim-terraform
 " Syntax highlighting for Terraform

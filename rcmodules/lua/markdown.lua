@@ -13,8 +13,8 @@ vim.api.nvim_create_autocmd("FileType", {
     callback = function()
         -- Disable spell check for markdown
         vim.opt_local.spell = false
-        -- Enable concealment for this buffer
-        vim.opt_local.conceallevel = 0
+        -- Hide the markers treesitter marks concealable: ** and * around bold/italic, ` around code, link URLs
+        vim.opt_local.conceallevel = 2
         
         -- BOLD: Bright Yellow/Gold to be unmistakable
         vim.cmd([[hi! markdownBold gui=bold cterm=bold guifg=#f9e2af ctermfg=222]])
@@ -47,5 +47,9 @@ vim.api.nvim_create_autocmd("FileType", {
         -- Links (Blue)
         vim.cmd([[hi! markdownLinkText gui=underline cterm=underline guifg=#89b4fa ctermfg=111]])
         vim.cmd([[hi! markdownUrl gui=italic cterm=italic guifg=#6c7086 ctermfg=243]])
+
+        -- Quotes and tables: badwolf has no quote color and its Special (> and | markers) is plain white
+        vim.cmd([[hi! @markup.quote.markdown gui=italic cterm=italic guifg=#a6adc8 ctermfg=146]])
+        vim.cmd([[hi! @punctuation.special.markdown guifg=#94e2d5 ctermfg=116]])
     end
 })

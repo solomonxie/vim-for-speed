@@ -48,6 +48,7 @@
     command! GithubLinkCurrentLine call GithubLinkCurrentLine()
     command! GitOpen call GitOpen()
     command! OpenChangedFiles call EditChangedFiles()
+    command! -nargs=? -complete=customlist,GitRefComplete ChangeGitDiffBase call SetGitDiffBase(<q-args>)
 "}
 
 

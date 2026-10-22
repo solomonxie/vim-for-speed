@@ -1,7 +1,7 @@
 "REF: https://github.com/ap/vim-buftabline
 Plug 'ap/vim-buftabline', {'commit': '6cdb6ae'}
 
-let g:buftabline_show = 1  "only if there are at least two buffers
+let g:buftabline_show = 2  "always, even with only one buffer
 let g:buftabline_numbers = 2
 let g:buftabline_indicators = v:true
 let g:buftabline_separators = v:false

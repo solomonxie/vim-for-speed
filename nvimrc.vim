@@ -136,7 +136,7 @@ endfor
 
 " LSPs:
 luafile ~/.config/nvim/rcmodules/lua/lsp-python.lua
-luafile ~/.config/nvim/rcmodules/lua/lsp-sql.lua
+" luafile ~/.config/nvim/rcmodules/lua/lsp-sql.lua  "not needed, treesitter highlights SQL
 luafile ~/.config/nvim/rcmodules/lua/lsp-vim.lua
 luafile ~/.config/nvim/rcmodules/lua/lsp-css.lua
 luafile ~/.config/nvim/rcmodules/lua/lsp-js.lua

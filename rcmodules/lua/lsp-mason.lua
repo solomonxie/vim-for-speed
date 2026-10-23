@@ -4,7 +4,7 @@ local my_lsp_servers = {
     'pylsp',
     'vimls',
     'cssls',
-    'sqlls',
+    -- 'sqlls',  -- not needed: SQL highlighting (also ```sql in markdown) comes from treesitter's sql parser
     'emmet_ls',  --HTML
     'clangd',  -- C, C++
     'gopls',  -- Go

@@ -7,6 +7,19 @@ vim.opt.conceallevel = 0
 -- Don't conceal in the current line while editing
 vim.opt.concealcursor = 'nc'
 
+-- Keep ``` fences and their language name visible: nvim-treesitter's markdown query conceals them
+-- (whole lines too), and an `; extends` file can't undo that, so replace the query with a copy minus the conceals
+pcall(function()
+    local parts = {}
+    for _, path in ipairs(vim.treesitter.query.get_files('markdown', 'highlights')) do
+        table.insert(parts, table.concat(vim.fn.readfile(path), '\n'))
+    end
+    local query = table.concat(parts, '\n')
+    query = query:gsub('%(#set! conceal_lines ""%)', '')
+    query = query:gsub('%(#set! conceal ""%)', '')
+    vim.treesitter.query.set('markdown', 'highlights', query)
+end)
+
 -- Set file-specific highlights for Markdown
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "markdown",

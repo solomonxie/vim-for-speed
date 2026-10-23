@@ -6,16 +6,19 @@ local cmp = require('cmp')
 
 -- Path completion fix:
 -- Selecting a folder (ends in `/`) --> ctrl-n to select, then <Enter> to show further content
-vim.api.nvim_create_autocmd('CompleteDone', {
-    callback = function()
-        local word = (vim.v.completed_item or {}).word
-        if word and word:sub(-1) == '/' then
-            vim.defer_fn(function()
-                cmp.complete()
-            end, 20)
-        end
-    end,
-})
+-- (cmp's own menu never fires vim's CompleteDone, so hook cmp's confirm_done instead)
+cmp.event:on('confirm_done', function(evt)
+    if not evt.entry or evt.entry.source.name ~= 'path' then
+        return
+    end
+    local item = evt.entry:get_completion_item()
+    local text = item.insertText or item.label or ''
+    if text:sub(-1) == '/' then
+        vim.defer_fn(function()
+            cmp.complete()
+        end, 20)
+    end
+end)
 
 -- Setup nvim-cmp.
 -- vim.opt.completeopt = 'menu,menuone,noinsert,noselect'

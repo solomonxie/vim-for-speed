@@ -357,6 +357,8 @@ function! s:NerdTreeGitHighlight() abort
     if s:git_ignored_ns >= 0
         call nvim_buf_clear_namespace(0, s:git_ignored_ns, 0, -1)
         for [l:lnum, l:text] in items(l:marks)
+            " eol virt_text already starts one cell after the name, so drop the first leading space
+            let l:text[0][0] = l:text[0][0][1:]
             call nvim_buf_set_extmark(0, s:git_ignored_ns, str2nr(l:lnum) - 1, 0,
                         \ {'virt_text': l:text, 'virt_text_pos': 'eol'})
         endfor

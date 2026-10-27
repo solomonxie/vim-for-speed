@@ -66,11 +66,12 @@ autocmd BufEnter * call Disable_plugins()
 " autocmd FocusLost * GitGutterDisable
 " autocmd FocusGained * GitGutterEnable
 
+" Only this buffer: GitGutterDisable turned it off in every buffer until vim restarted
 function! Disable_plugins()
     if line('$') > 2000
-        execute "GitGutterDisable"
+        execute "GitGutterBufferDisable"
     elseif strlen(getline('.')) > 2000
-        execute "GitGutterDisable"
+        execute "GitGutterBufferDisable"
     endif
 endfunction
 

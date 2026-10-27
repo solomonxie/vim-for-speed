@@ -16,6 +16,10 @@ nnoremap <Leader>f :<C-U>let g:NERDTreeQuitOnOpen = 0 \| call NerdTreeAtProjectR
 " NERDTree reads NERDTreeQuitOnOpen on every open, so the key last used decides.
 nnoremap ff :<C-U>let g:NERDTreeQuitOnOpen = 1 \| call NerdTreeFindOrRoot()<CR>zz
 nnoremap FF :<C-U>let g:NERDTreeQuitOnOpen = 0 \| call NerdTreeFindOrRoot()<CR>zz
+" In the tree, NERDTree's own buffer-local F (toggle files) and f (toggle filters) win over the
+" global FF/ff, so they never switched the mode there; map them in the tree too
+autocmd FileType nerdtree nnoremap <buffer><silent> ff :<C-U>let g:NERDTreeQuitOnOpen = 1<CR>
+autocmd FileType nerdtree nnoremap <buffer><silent> FF :<C-U>let g:NERDTreeQuitOnOpen = 0<CR>
 
 " Symlinks are never resolved: a file opened through a symlinked folder is shown in the tree
 " under that folder, as if it were a plain one. NERDTree itself resolves them (:NERDTree <dir>,

@@ -312,11 +312,11 @@ autocmd FileType markdown nnoremap <buffer><silent> <leader>P :MarkdownPreview<C
 " map tt
 " plugin defaults, not set by me (buffer-local inside Tig window): e/<C-o>/<C-t>/<C-s>/<C-v>=open entry, <ESC>o/t/s/v=open commit ... see g:tig_explorer_keymap_*
 
-"vim/rcmodules/gitgutter.vim
-" map gz, map gp, map gn, map gP
 "vim/rcmodules/visidata.vim
 " map tv (:VisiData [file]: data file under the cursor, else the current one)
 
+"vim/rcmodules/gitgutter.vim
+" map gz, map gp, map gn, map gP
 " plugin defaults, not set by me (buffer-local): [c/]c=prev/next hunk, <Leader>hs=stage hunk, <Leader>hu=undo hunk, <Leader>hp=preview hunk, ic/ac=hunk text-object
 
 "vim/rcmodules/lua/snippets.lua

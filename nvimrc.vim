@@ -227,6 +227,18 @@ au FocusGained,BufEnter * :checktime
 if !exists('g:autoread_timer')
     let g:autoread_timer = timer_start(2000, {-> execute('silent! checktime')}, {'repeat': -1})
 endif
+" A file deleted outside vim: nvim's own E211 warning freezes input for ~1s. Say it ourselves
+" instead (after the check, or it's wiped); anything else gets nvim's usual handling.
+function! s:FileChangedShell() abort
+    if v:fcs_reason ==# 'deleted'
+        let s:fcs_msg = 'File no longer available: ' . expand('<afile>')
+        call timer_start(0, {-> execute('echohl WarningMsg | echo s:fcs_msg | echohl None', '')})
+        let v:fcs_choice = ''
+    else
+        let v:fcs_choice = 'ask'
+    endif
+endfunction
+au FileChangedShell * call s:FileChangedShell()
 
 " Fix ":" auto-filling a huge range like .,.+2143 -> E16 on :q/:wq after refocus
 " Skip terminal buffers (tig/fzf/lazygit etc) so refocus doesn't kick them out of Terminal-mode

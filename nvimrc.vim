@@ -99,6 +99,7 @@ call plug#begin('~/vim_plugged')
         " source ~/.config/nvim/rcmodules/nvim_dap.vim  "For general debugging
     "{Git}
         source ~/.config/nvim/rcmodules/tig.vim
+        source ~/.config/nvim/rcmodules/visidata.vim
         " source ~/.config/nvim/rcmodules/fugitive.vim
         source ~/.config/nvim/rcmodules/gitgutter.vim  "50ms+
         " source ~/.config/nvim/rcmodules/gitsigns.vim  "BLAZING FAST: 0.2262ms

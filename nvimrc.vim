@@ -146,6 +146,7 @@ luafile ~/.config/nvim/rcmodules/lua/lsp-cpp.lua
 luafile ~/.config/nvim/rcmodules/lua/lsp-terraform.lua
 " luafile ~/.config/nvim/rcmodules/lua/lsp-ruby.lua
 luafile ~/.config/nvim/rcmodules/lua/markdown.lua
+luafile ~/.config/nvim/rcmodules/lua/bigfile.lua
 " Others:
 luafile ~/.config/nvim/rcmodules/lua/nvimrc-functions.lua
 luafile ~/.config/nvim/rcmodules/lua/misc-plugins.lua
@@ -311,11 +312,8 @@ autocmd FileType * setlocal formatoptions-=cro
 
 
 "IMPORTANT: FOR OPENNING LARGE FILE
-let g:large_file_size = 10000000  "10MB
-
-" If the file is too large, for performance, need to disable highlighting
-autocmd BufReadPre * let f=expand("<afile>") | if getfsize(f) > g:large_file_size | set noswapfile | syntax clear | endif
-" autocmd BufReadPre * let f=expand("<afile>") | if getfsize(f) <= g:large_file_size | syntax clear | endif
+" Files over this open as plain text with plugins off, see rcmodules/lua/bigfile.lua
+let g:large_file_size = 10 * 1024 * 1024  "10MB
 
 " --- PERSISTENT FILE SETTINGS ---
 " [  Backup Files  ]--------{

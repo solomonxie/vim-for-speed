@@ -51,7 +51,10 @@ end
 function GitBlameToggle()
     local on = #vim.api.nvim_get_autocmds({ group = group }) == 0
     vim.api.nvim_clear_autocmds({ group = group })
-    vim.api.nvim_buf_clear_namespace(0, ns, 0, -1)
+    -- every buffer, not just this one: the others keep the text of the last line shown in them
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+        vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
+    end
     if on then
         vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave', 'TextChanged' }, { group = group, callback = blame })
         vim.api.nvim_create_autocmd({ 'CursorMoved', 'InsertEnter' }, { group = group, callback = show })

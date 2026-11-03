@@ -59,7 +59,7 @@ call plug#begin('~/vim_plugged')
         source ~/.config/nvim/rcmodules/buftabline.vim  "Blazing fast!
         source ~/.config/nvim/rcmodules/lightline.vim  "Blazing fast!
         " source ~/.config/nvim/rcmodules/statusline.vim
-        source ~/.config/nvim/rcmodules/nerdtree.vim
+        " source ~/.config/nvim/rcmodules/nerdtree.vim
         " source ~/.config/nvim/rcmodules/neotree.vim  "BUGGY!!! HEAVY
         " source ~/.config/nvim/rcmodules/nvim-tree.vim  "fast, simple, but sometimes annoying
         source ~/.config/nvim/rcmodules/netrw.vim

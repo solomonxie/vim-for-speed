@@ -100,9 +100,9 @@ end
 
 if string.find(vim.o['runtimepath'], 'nvim%-lsp%-tagbar') then
     require('nvim-lsp-tagbar').setup({
-        -- right sidebar, as wide as NERDTree; j/k shows each symbol in the source window
-        position = 'right',
-        width = vim.g.NERDTreeWinSize or 40,
+        -- left sidebar, as wide as NERDTree; j/k shows each symbol in the source window
+        position = 'left',
+        width = 50,
         auto_preview = true,
         -- emmylua_ls emits no symbol for anonymous functions, so command
         -- and autocmd handlers are matched by name here instead.
@@ -123,4 +123,9 @@ if string.find(vim.o['runtimepath'], 'nvim%-lsp%-tagbar') then
             },
         },
     })
+    -- ff: the bar closes once a file is opened from it, or when you leave it. FF: it stays open.
+    -- Both open it with the current file revealed, or jump into it if it's open; the last used decides.
+    local tagbar = require('nvim-lsp-tagbar')
+    vim.keymap.set('n', 'ff', function() tagbar.find({ stay = false }) end, { desc = 'File tree, closes on open' })
+    vim.keymap.set('n', 'FF', function() tagbar.find({ stay = true }) end, { desc = 'File tree, stays open' })
 end

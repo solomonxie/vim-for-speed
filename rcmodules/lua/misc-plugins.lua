@@ -100,6 +100,9 @@ end
 
 if string.find(vim.o['runtimepath'], 'nvim%-lsp%-tagbar') then
     require('nvim-lsp-tagbar').setup({
+        -- no ft toggle: ff (below) opens the bar
+        -- keymap = 'ft',
+        keymap = false,
         -- left sidebar, as wide as NERDTree; j/k shows each symbol in the source window
         position = 'left',
         width = 50,
@@ -123,9 +126,7 @@ if string.find(vim.o['runtimepath'], 'nvim%-lsp%-tagbar') then
             },
         },
     })
-    -- ff: the bar closes once a file is opened from it, or when you leave it. FF: it stays open.
-    -- Both open it with the current file revealed, or jump into it if it's open; the last used decides.
-    local tagbar = require('nvim-lsp-tagbar')
-    vim.keymap.set('n', 'ff', function() tagbar.find({ stay = false }) end, { desc = 'File tree, closes on open' })
-    vim.keymap.set('n', 'FF', function() tagbar.find({ stay = true }) end, { desc = 'File tree, stays open' })
+    -- ff: open the bar with the current file revealed, or jump into it if it's open.
+    -- In the bar, ! locks it open (stays after opening a file or leaving it); ! again unlocks.
+    vim.keymap.set('n', 'ff', require('nvim-lsp-tagbar').find, { desc = 'File tree, current file revealed' })
 end

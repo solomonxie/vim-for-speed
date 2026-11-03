@@ -1625,13 +1625,13 @@ endfunction
 " --- GIT DIFF BASE (shared by gitgutter, NERDTree, lsptagbar) ---
 " g:git_diff_base: the commit every git view diffs against. Plugins read GitDiffBase()
 " (or the variable) and listen for `User GitDiffBaseChanged` to repaint.
-" Default: where this branch forked from main (fallback: master), so views show the
-" whole branch like a PR. Re-picked per repo/worktree on BufEnter until a ref is set by hand.
-" :ChangeGitDiffBase          -> back to the default (branch fork point, auto per repo)
+" Default: HEAD, so views show uncommitted changes only.
+" :ChangeGitDiffBase          -> where this branch forked from main (fallback: master), so views show
+"                                the whole branch like a PR. Re-picked per repo/worktree on BufEnter.
 " :ChangeGitDiffBase <ref>    -> diff against any branch/tag/commit, e.g. HEAD~3, origin/develop
-" :ChangeGitDiffBase HEAD     -> uncommitted changes only
+" :ChangeGitDiffBase HEAD     -> back to the default
 let g:git_diff_base = get(g:, 'git_diff_base', 'HEAD')
-let s:git_diff_base_auto = 1
+let s:git_diff_base_auto = 0
 autocmd BufEnter * if s:git_diff_base_auto | call s:AutoGitDiffBase() | endif
 
 function! GitDiffBase() abort
@@ -1696,6 +1696,83 @@ function! GitRefComplete(arglead, cmdline, cursorpos) abort
 endfunction
 
 
+" :DiffSplit [ref] -> side-by-side line diff of this buffer (unsaved edits included) against the
+" file at a git ref, default the shared diff base (HEAD unless :ChangeGitDiffBase moved it).
+" Untracked or non-git files compare against the saved file on disk. Opens in its own tab;
+" q (or ,q) in either window closes it.
+" ]c / [c jump to the next / previous change; folds are off, zi toggles them.
+function! DiffSplit(ref) abort
+    if &buftype !=# '' || empty(expand('%'))
+        echohl ErrorMsg | echo 'DiffSplit: not a file buffer' | echohl None
+        return
+    endif
+    let l:file = resolve(expand('%:p'))  " a symlinked path (tmp/workfiles) -> the real repo
+    let l:git = 'git -C ' . shellescape(fnamemodify(l:file, ':h')) . ' '
+    let l:rel = trim(system(l:git . 'ls-files --full-name -- ' . shellescape(l:file)))
+    if v:shell_error == 0 && !empty(l:rel)
+        let l:ref = empty(a:ref) ? GitDiffBase() : a:ref
+        let l:lines = systemlist(l:git . 'show ' . shellescape(l:ref . ':' . l:rel))
+        if v:shell_error != 0
+            echohl ErrorMsg | echo 'DiffSplit: ' . join(l:lines, ' ') | echohl None
+            return
+        endif
+        let l:label = l:ref =~# '^\x\{40}$' ? l:ref[:7] : l:ref
+    elseif filereadable(l:file)
+        let l:lines = readfile(l:file)
+        let l:label = 'saved'
+    else
+        echohl ErrorMsg | echo 'DiffSplit: no git version or saved file to compare with' | echohl None
+        return
+    endif
+    let l:ft = &filetype
+    let l:src_buf = bufnr('%')
+    " its own tab: your windows stay as they are, and diff/fold settings are this tab's windows only
+    tab split
+    let t:diffsplit_buf = -1
+    let l:src_win = win_getid()
+    diffthis
+    setlocal nofoldenable  " show the whole file, not just the changes (zi folds them back)
+    leftabove vnew
+    call setline(1, l:lines)
+    setlocal buftype=nofile bufhidden=wipe noswapfile nomodifiable nobuflisted
+    let &l:filetype = l:ft
+    silent! execute 'file ' . fnameescape('[' . l:label . '] ' . fnamemodify(l:file, ':t'))
+    diffthis
+    setlocal nofoldenable
+    let t:diffsplit_buf = bufnr('%')
+    execute 'autocmd BufWipeout <buffer> call timer_start(0, {-> DiffSplitEnd(' . l:src_win . ', ' . l:src_buf . ')})'
+    " q in either window ends the diff (macro q everywhere else, and back here after)
+    nnoremap <buffer> <silent> q :call DiffSplitClose()<CR>
+    call win_gotoid(l:src_win)
+    nnoremap <buffer> <silent> <expr> q DiffSplitQ()
+endfunction
+
+" End the :DiffSplit of the current tab: wiping its copy closes the tab (DiffSplitEnd).
+function! DiffSplitClose() abort
+    if bufexists(get(t:, 'diffsplit_buf', -1))
+        execute 'bwipeout ' . t:diffsplit_buf
+    endif
+endfunction
+
+" Runs once the copy is wiped (q, ,q, :q): close the diff tab, back to the tab you came from.
+function! DiffSplitEnd(src_win, src_buf) abort
+    let l:tab = win_id2tabwin(a:src_win)[0]
+    if l:tab > 0 && tabpagenr('$') > 1
+        execute 'tabclose ' . l:tab
+    elseif l:tab > 0
+        call win_execute(a:src_win, 'diffoff')
+        call settabvar(l:tab, 'diffsplit_buf', -1)
+    endif
+endfunction
+
+" q on the original buffer: inside a diff tab end it; anywhere else record a macro as usual.
+function! DiffSplitQ() abort
+    if bufexists(get(t:, 'diffsplit_buf', -1))
+        return ":\<C-u>call DiffSplitClose()\<CR>"
+    endif
+    return 'q'
+endfunction
+
 " ==================== COMMANDS ====================
 "----------------------------------------------------------------------------------------"
 "|       __     ___              ____                                          _        |"
@@ -1748,6 +1825,7 @@ endfunction
     command! GitOpen call GitOpen()
     command! OpenChangedFiles call EditChangedFiles()
     command! -nargs=? -complete=customlist,GitRefComplete ChangeGitDiffBase call SetGitDiffBase(<q-args>)
+    command! -nargs=? -complete=customlist,GitRefComplete DiffSplit call DiffSplit(<q-args>)
 "}
 
 
@@ -1912,6 +1990,9 @@ nnoremap <leader>R :call LoadSession()<CR><ESC>
 "Git blame current line
 " nnoremap gb :execute "!git blame -L " . line(".") . ",+1 % "<CR>
 
+" Side-by-side diff of this buffer against the git diff base (:DiffSplit, vimrc-functions.vim)
+nnoremap <silent> gD :DiffSplit<CR>
+
 
 " --- CTRL + ALPHABET MAPPINGS ---
 inoremap <C-v> <C-r>0
@@ -1966,6 +2047,11 @@ endfunction
 
 function! s:CloseBuffer() abort
     let l:buf = bufnr('%')
+    " a :DiffSplit tab: close it, keep your file
+    if bufexists(get(t:, 'diffsplit_buf', -1))
+        call DiffSplitClose()
+        return
+    endif
     " Quickfix/location list, help, etc.: just close the window
     if &buftype !=# '' && winnr('$') > 1
         call CloseWindowGoBack()
@@ -2111,6 +2197,18 @@ let g:enable_badwolf_markdown = 0
 let g:enable_badwolf_mysql = 0
 let g:enable_badwolf_slimv = 0
 silent! colorscheme badwolf  "Plug 'solomonxie/badwolf'
+
+" Diff mode (:DiffSplit, nvim -d): badwolf's DiffAdd is a gray bg with black text, and DiffDelete
+" is solid black, so added lines read as greyed out. Green = added, red filler = deleted,
+" amber = changed line, brighter amber = the changed words. Same tints as the gitgutter line colors.
+function! s:DiffColors() abort
+    highlight DiffAdd    cterm=NONE ctermfg=NONE ctermbg=22  gui=NONE guifg=NONE guibg=#1a3a24
+    highlight DiffDelete cterm=NONE ctermfg=52   ctermbg=52  gui=NONE guifg=#3a1a1a guibg=#3a1a1a
+    highlight DiffChange cterm=NONE ctermfg=NONE ctermbg=58  gui=NONE guifg=NONE guibg=#3a3a1a
+    highlight DiffText   cterm=bold ctermfg=NONE ctermbg=94  gui=bold guifg=NONE guibg=#5f4a00
+endfunction
+call s:DiffColors()
+autocmd ColorScheme * call s:DiffColors()
 
 " ==========> ALTERNATIVES ===========>
     "colorscheme gruvbox  "20ms

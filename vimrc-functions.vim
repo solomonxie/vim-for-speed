@@ -23,16 +23,6 @@ function! HowManyBuffers()
 endfunction
 
 
-" Open git changed files
-function! EditChangedFiles()
-    let fnames = split(system("git diff --name-only"), "\n")
-    for fn in fnames
-        " execute "argadd " fn
-        execute "next " fn
-    endfor
-endfunction
-
-
 "{Toggle Relative Line Number}
 function! ToggleRelativeNumber()
     if &relativenumber == 0
@@ -82,114 +72,7 @@ function! LoadVimrc()
 endfunction
 
 
-function! s:GitRemoteFileUrl(with_line, ...) abort
-    let l:file = expand('%:p')
-    let l:target = a:0 >= 1 ? a:1 : l:file
-    let l:kind = a:0 >= 2 ? a:2 : 'blob'
-    if empty(l:target) || (a:0 == 0 && &buftype !=# '')
-        echoerr 'Current buffer is not a file'
-        return ''
-    endif
-
-    let l:file_dir = a:0 >= 1 ? l:target : expand('%:p:h')
-    let l:root = trim(system('git -C ' . shellescape(l:file_dir) . ' rev-parse --show-toplevel'))
-    if v:shell_error || empty(l:root)
-        echoerr 'Current file is not in a Git repository'
-        return ''
-    endif
-
-    let l:remotes = systemlist('git -C ' . shellescape(l:root) . ' remote')
-    let l:remote = get(l:remotes, 0, '')
-    if empty(l:remote)
-        echoerr 'No Git remote found'
-        return ''
-    endif
-
-    let l:remote_url = trim(system('git -C ' . shellescape(l:root) . ' remote get-url ' . shellescape(l:remote)))
-    if v:shell_error || empty(l:remote_url)
-        echoerr 'Could not determine Git remote URL'
-        return ''
-    endif
-
-    let l:remote_url = substitute(l:remote_url, '^git@\([^:]*\):', 'https://\1/', '')
-    let l:remote_url = substitute(l:remote_url, '^ssh://git@', 'https://', '')
-    let l:remote_url = substitute(l:remote_url, '^git+ssh://git@', 'https://', '')
-    let l:remote_url = substitute(l:remote_url, '/\?$', '', '')
-    let l:remote_url = substitute(l:remote_url, '\.git$', '', '')
-
-    let l:branch = trim(system('git -C ' . shellescape(l:root) . ' symbolic-ref --short HEAD 2>/dev/null'))
-    if empty(l:branch)
-        let l:branch = trim(system('git -C ' . shellescape(l:root) . ' rev-parse HEAD'))
-    endif
-
-    let l:relative = l:target ==# l:root ? '' : strpart(l:target, strlen(l:root) + 1)
-    let l:relative = substitute(l:relative, ' ', '%20', 'g')
-    let l:branch = substitute(l:branch, ' ', '%20', 'g')
-    let l:host = tolower(matchstr(l:remote_url, '^https\?://[^/]*'))
-    if l:host =~# 'github\.com'
-        let l:url = l:remote_url . '/' . l:kind . '/' . l:branch . '/' . l:relative
-    elseif l:host =~# 'gitlab\.'
-        let l:url = l:remote_url . '/-/' . l:kind . '/' . l:branch . '/' . l:relative
-    elseif l:host =~# 'bitbucket\.'
-        let l:url = l:remote_url . '/src/' . l:branch . '/' . l:relative
-    else
-        let l:url = l:remote_url . '/' . l:kind . '/' . l:branch . '/' . l:relative
-    endif
-
-    let l:url = substitute(l:url, '/$', '', '')
-    if a:with_line
-        let l:url .= '#L' . line('.')
-    endif
-    return l:url
-endfunction
-
-function! GetGithubLink(with_line) abort
-    let l:url = s:GitRemoteFileUrl(a:with_line)
-    if empty(l:url)
-        return
-    endif
-    let @+ = l:url
-    echo 'Copied Git remote link'
-endfunction
-
-function! GetGitRemoteCodeReferenceLink()
-    call GetGithubLink(1)
-endfunction
-
-function! GithubLink()
-    call GetGithubLink(0)
-endfunction
-
-function! GithubLinkCurrentLine()
-    call GetGithubLink(1)
-endfunction
-
-function! GitOpen() abort
-    if empty(expand('%:p')) || &buftype !=# ''
-        " No file (empty buffer, NERDTree...): open the repo root, not cwd
-        let l:root = trim(system('git -C ' . shellescape(getcwd()) . ' rev-parse --show-toplevel'))
-        let l:url = s:GitRemoteFileUrl(0, v:shell_error ? getcwd() : l:root, 'tree')
-    else
-        let l:url = s:GitRemoteFileUrl(0)
-    endif
-    if empty(l:url)
-        return
-    endif
-
-    if executable('open')
-        let l:browser = 'open'
-    elseif executable('xdg-open')
-        let l:browser = 'xdg-open'
-    elseif executable('cmd.exe')
-        let l:browser = 'cmd.exe'
-    else
-        echo l:url
-        return
-    endif
-
-    call jobstart([l:browser, l:url], {'detach': v:true})
-    echo 'Opened ' . l:url
-endfunction
+" Remote links (GitOpen, GithubLink...): nvim-git-flow plugin (links.lua)
 
 
 " One session per project, named by its slugified full path, e.g.
@@ -562,7 +445,9 @@ endfunction
 " Quickfix/help etc.: close the window. Files: :Bclose (bclose.vim) shows the
 " alternate buffer and keeps the window, so the layout next to NERDTree survives.
 function! CloseBuffer() abort
-    if &buftype !=# '' && winnr('$') > 1
+    if luaeval("pcall(require, 'nvim-git-flow.diffsplit') and require('nvim-git-flow.diffsplit').close()")
+        " a :DiffSplit tab: closed it, both buffers kept
+    elseif &buftype !=# '' && winnr('$') > 1
         call CloseWindowGoBack()
     else
         Bclose
@@ -570,77 +455,10 @@ function! CloseBuffer() abort
 endfunction
 
 
-" --- GIT DIFF BASE (shared by gitgutter, NERDTree, lsptagbar) ---
-" g:git_diff_base: the commit every git view diffs against. Plugins read GitDiffBase()
-" (or the variable) and listen for `User GitDiffBaseChanged` to repaint.
-" Default: where this branch forked from main (fallback: master), so views show the
-" whole branch like a PR. Re-picked per repo/worktree on BufEnter until a ref is set by hand.
-" :ChangeGitDiffBase          -> back to the default (branch fork point, auto per repo)
-" :ChangeGitDiffBase <ref>    -> diff against any branch/tag/commit, e.g. HEAD~3, origin/develop
-" :ChangeGitDiffBase HEAD     -> uncommitted changes only
-let g:git_diff_base = get(g:, 'git_diff_base', 'HEAD')
-let s:git_diff_base_auto = 1
-autocmd BufEnter * if s:git_diff_base_auto | call s:AutoGitDiffBase() | endif
-
+" Git diff base (:ChangeGitDiffBase, g:git_diff_base, User GitDiffBaseChanged) and :DiffSplit:
+" nvim-git-flow plugin. GitDiffBase() stays for NERDTree (rcmodules/nerdtree.vim).
 function! GitDiffBase() abort
     return empty(get(g:, 'git_diff_base', '')) ? 'HEAD' : g:git_diff_base
-endfunction
-
-function! s:AutoGitDiffBase() abort
-    if &buftype !=# ''
-        return
-    endif
-    if !exists('b:git_toplevel')
-        let b:git_toplevel = trim(system('git -C ' . shellescape(expand('%:p:h')) . ' rev-parse --show-toplevel 2>/dev/null'))
-    endif
-    if empty(b:git_toplevel) || b:git_toplevel ==# get(s:, 'git_diff_base_repo', '')
-        return
-    endif
-    let s:git_diff_base_repo = b:git_toplevel
-    let g:git_diff_base = 'HEAD'  " if no main/master here, don't keep another repo's base
-    call SetGitDiffBase('', 1)
-endfunction
-
-" ref '' = branch fork point from main/master; optional 2nd arg: quiet (no messages)
-function! SetGitDiffBase(ref, ...) abort
-    let l:quiet = a:0 && a:1
-    let s:git_diff_base_auto = empty(a:ref)
-    let l:git = 'git -C ' . shellescape(expand('%:p:h')) . ' '
-    let l:ref = a:ref
-    if empty(l:ref)
-        for l:candidate in ['main', 'master', 'origin/main', 'origin/master']
-            call system(l:git . 'rev-parse --verify --quiet ' . shellescape(l:candidate))
-            if v:shell_error == 0
-                let l:ref = l:candidate
-                break
-            endif
-        endfor
-        if empty(l:ref)
-            if !l:quiet | echohl ErrorMsg | echo 'ChangeGitDiffBase: no main/master branch found' | echohl None | endif
-            return
-        endif
-        let l:base = trim(system(l:git . 'merge-base HEAD ' . shellescape(l:ref)))
-        let l:label = 'merge-base with ' . l:ref
-    else
-        let l:base = trim(system(l:git . 'rev-parse --verify --quiet ' . shellescape(l:ref)))
-        let l:label = l:ref
-    endif
-    if v:shell_error != 0 || empty(l:base)
-        if !l:quiet | echohl ErrorMsg | echo 'ChangeGitDiffBase: invalid ref: ' . l:ref | echohl None | endif
-        return
-    endif
-    let g:git_diff_base = l:base
-    if exists('#User#GitDiffBaseChanged')
-        doautocmd <nomodeline> User GitDiffBaseChanged
-    endif
-    if !l:quiet
-        echo 'Git diff base: ' . l:label . ' (' . l:base[:7] . ')'
-    endif
-endfunction
-
-function! GitRefComplete(arglead, cmdline, cursorpos) abort
-    let l:refs = systemlist('git -C ' . shellescape(expand('%:p:h')) . ' for-each-ref --format="%(refname:short)" refs/heads refs/remotes refs/tags')
-    return filter(['HEAD'] + l:refs, 'v:val =~# "^" . escape(a:arglead, "\\.^$~[]*")')
 endfunction
 
 

@@ -81,6 +81,23 @@ if string.find(vim.o['runtimepath'], 'nvim%-repo%-browser') then
     require('repo-browser').setup()
 end
 
+if string.find(vim.o['runtimepath'], 'nvim%-git%-flow') then
+    require('nvim-git-flow').setup({
+        base = 'HEAD',  -- :ChangeGitDiffBase switches it (no arg = where the branch forked from main)
+        -- same keys as with gitgutter, plus gD (diff tab) and tb (line blame)
+        keymaps = {
+            hunk_next = 'gn',
+            hunk_prev = 'gp',
+            hunk_preview = 'gP',
+            hunk_fold = 'gz',
+            hunk_stage = '<Leader>hs',
+            hunk_undo = '<Leader>hu',
+            diff_split = 'gD',
+            blame_toggle = 'tb',
+        },
+    })
+end
+
 if string.find(vim.o['runtimepath'], 'nvim%-lsp%-tagbar') then
     require('nvim-lsp-tagbar').setup({
         -- right sidebar, as wide as NERDTree; j/k shows each symbol in the source window

@@ -137,6 +137,11 @@ Plug 'solomonxie/nvim-repo-browser', { 'branch': 'master', 'do': 'npm install &&
 "REF: https://github.com/solomonxie/nvim-lsp-tagbar
 Plug 'solomonxie/nvim-lsp-tagbar', { 'branch': 'master' }
 
+"Git signs, hunk preview/stage/undo, side-by-side diff tab, line blame, remote links (replaces gitgutter)
+"REF: https://github.com/solomonxie/nvim-git-flow
+Plug 'solomonxie/nvim-git-flow', { 'branch': 'master' }
+"^ setup() and keys in rcmodules/lua/misc-plugins.lua; local clone ~/personal/nvim-git-flow
+
 "Tree of this session's jumps (gd, <C-]>, searches...), one level deeper per jump onward. Forgotten on quit.
 "REF: https://github.com/solomonxie/nvim-jumps
 " Plug 'solomonxie/nvim-jumps', { 'branch': 'master' }

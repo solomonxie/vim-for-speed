@@ -101,7 +101,7 @@ call plug#begin('~/vim_plugged')
         source ~/.config/nvim/rcmodules/tig.vim
         source ~/.config/nvim/rcmodules/visidata.vim
         " source ~/.config/nvim/rcmodules/fugitive.vim
-        source ~/.config/nvim/rcmodules/gitgutter.vim  "50ms+
+        " source ~/.config/nvim/rcmodules/gitgutter.vim  "50ms+ -- replaced by nvim-git-flow (rcmodules/misc.vim)
         " source ~/.config/nvim/rcmodules/gitsigns.vim  "BLAZING FAST: 0.2262ms
     "{Python}
         " source ~/.config/nvim/rcmodules/jedi.vim
@@ -146,7 +146,7 @@ luafile ~/.config/nvim/rcmodules/lua/lsp-terraform.lua
 " luafile ~/.config/nvim/rcmodules/lua/lsp-ruby.lua
 luafile ~/.config/nvim/rcmodules/lua/markdown.lua
 luafile ~/.config/nvim/rcmodules/lua/bigfile.lua
-luafile ~/.config/nvim/rcmodules/lua/git_blame.lua
+" luafile ~/.config/nvim/rcmodules/lua/git_blame.lua  "moved into nvim-git-flow (blame.lua)
 " Others:
 luafile ~/.config/nvim/rcmodules/lua/nvimrc-functions.lua
 luafile ~/.config/nvim/rcmodules/lua/misc-plugins.lua

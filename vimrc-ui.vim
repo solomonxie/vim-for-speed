@@ -45,6 +45,18 @@ let g:enable_badwolf_mysql = 0
 let g:enable_badwolf_slimv = 0
 colorscheme badwolf  "16ms after my fork
 
+" Diff mode (:DiffSplit, nvim -d): badwolf's DiffAdd is a gray bg with black text, and DiffDelete
+" is solid black, so added lines read as greyed out. Green = added, red filler = deleted,
+" amber = changed line, brighter amber = the changed words. Same tints as the gitgutter line colors.
+function! s:DiffColors() abort
+    highlight DiffAdd    cterm=NONE ctermfg=NONE ctermbg=22  gui=NONE guifg=NONE guibg=#1a3a24
+    highlight DiffDelete cterm=NONE ctermfg=52   ctermbg=52  gui=NONE guifg=#3a1a1a guibg=#3a1a1a
+    highlight DiffChange cterm=NONE ctermfg=NONE ctermbg=58  gui=NONE guifg=NONE guibg=#3a3a1a
+    highlight DiffText   cterm=bold ctermfg=NONE ctermbg=94  gui=bold guifg=NONE guibg=#5f4a00
+endfunction
+call s:DiffColors()
+autocmd ColorScheme * call s:DiffColors()
+
 " ==========> ALTERNATIVES ===========>
     "colorscheme gruvbox  "20ms
     "colorscheme cobalt2 "100ms

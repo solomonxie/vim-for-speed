@@ -42,13 +42,8 @@
 
 
 "<Git>------------------------------------------------------------------{
-    command! RemoteGitFileReference call GetGitRemoteCodeReferenceLink()
-    command! GithubLink call GithubLink()
-    command! OpenGithubLink call GitOpen()
-    command! GithubLinkCurrentLine call GithubLinkCurrentLine()
-    command! GitOpen call GitOpen()
-    command! OpenChangedFiles call EditChangedFiles()
-    command! -nargs=? -complete=customlist,GitRefComplete ChangeGitDiffBase call SetGitDiffBase(<q-args>)
+    " :GitOpen, :GithubLink, :GithubLinkCurrentLine, :RemoteGitFileReference, :OpenChangedFiles,
+    " :ChangeGitDiffBase, :DiffSplit, :GitBlameToggle, :GitHunk*: nvim-git-flow plugin
 "}
 
 

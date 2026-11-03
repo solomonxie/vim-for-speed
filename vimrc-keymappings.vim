@@ -117,8 +117,8 @@ nnoremap <leader>R :call LoadSession()<CR><ESC>
 
 "Git blame current line
 " nnoremap gb :execute "!git blame -L " . line(".") . ",+1 % "<CR>
-" Toggle blame of the cursor line as virtual text (rcmodules/lua/git_blame.lua)
-nnoremap <silent> tb :lua GitBlameToggle()<CR>
+" tb (toggle cursor-line blame), gD (diff tab vs the git diff base): nvim-git-flow, keys set in
+" rcmodules/lua/misc-plugins.lua
 
 
 " --- CTRL + ALPHABET MAPPINGS ---
@@ -261,7 +261,7 @@ autocmd FileType checkhealth,lspinfo nnoremap <buffer><silent><nowait> q :close<
 autocmd FileType qf nnoremap <buffer><silent><nowait> q :call CloseWindowGoBack()<CR>
 
 " Render to HTML and open in the browser: buffer-local so it only exists in markdown
-" (gp/gP are already taken by gitgutter's plugin defaults, see rcmodules/gitgutter.vim notes)
+" (gp/gP are taken by nvim-git-flow hunk keys, see rcmodules/lua/misc-plugins.lua)
 autocmd FileType markdown command! -buffer MarkdownPreview call PreviewMarkdown()
 autocmd FileType markdown nnoremap <buffer><silent> <leader>P :MarkdownPreview<CR>
 
@@ -315,9 +315,8 @@ autocmd FileType markdown nnoremap <buffer><silent> <leader>P :MarkdownPreview<C
 "vim/rcmodules/visidata.vim
 " map tv (:VisiData [file]: data file under the cursor, else the current one)
 
-"vim/rcmodules/gitgutter.vim
-" map gz, map gp, map gn, map gP
-" plugin defaults, not set by me (buffer-local): [c/]c=prev/next hunk, <Leader>hs=stage hunk, <Leader>hu=undo hunk, <Leader>hp=preview hunk, ic/ac=hunk text-object
+"vim/rcmodules/lua/misc-plugins.lua (nvim-git-flow, replaces gitgutter)
+" map gn/gp (next/prev hunk), gP (preview hunk), gz (fold all but hunks), <Leader>hs/<Leader>hu (stage/undo hunk), gD (diff tab), tb (line blame)
 
 "vim/rcmodules/lua/snippets.lua
 " map <C-k> (insert/select/visual, expand or wrap), <C-j> (insert/select, jump back)

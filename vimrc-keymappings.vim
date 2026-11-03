@@ -243,8 +243,9 @@ cnoremap <Esc>f <S-Right>
 " Native gd only understands brace-scoped declarations, not Python's
 " indentation-based scoping, so it fails to jump to defs outside the
 " current block; use LSP's actual definition lookup instead.
-nnoremap gd :lua vim.lsp.buf.definition()<CR>
-nnoremap <Leader>d :lua vim.lsp.buf.definition()<CR>
+" LspGotoDefinition (rcmodules/lua/lsp-mason.lua): pylsp first, basedpyright when it finds nothing
+nnoremap <silent> gd :lua (LspGotoDefinition or vim.lsp.buf.definition)()<CR>
+nnoremap <silent> <Leader>d :lua (LspGotoDefinition or vim.lsp.buf.definition)()<CR>
 " nnoremap <Leader>D :lua vim.diagnostic.open_float()<CR>
 nnoremap <Leader>r :lua vim.lsp.buf.rename('')<LEFT><LEFT>
 nnoremap <Leader>u :lua vim.lsp.buf.references()<CR>

@@ -62,6 +62,44 @@ vim.lsp.config('basedpyright', {
     end,
 })
 
+-- gd / ,d: pylsp (jedi) first, and basedpyright when jedi finds nothing. Jedi resolves an import to
+-- the wrong package when a tests/ copy shadows it (tests/use_cases/__init__.py hides the real
+-- namespace package use_cases/), where basedpyright follows the real import rules. basedpyright's
+-- definitionProvider stays off above so the two never show up twice; it still answers a direct ask.
+function _G.LspGotoDefinition()
+    local buf, win = vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()
+    local order = {}
+    for _, name in ipairs({ 'pylsp', 'basedpyright' }) do
+        local c = vim.lsp.get_clients({ bufnr = buf, name = name })[1]
+        if c then table.insert(order, c) end
+    end
+    if #order == 0 then
+        return vim.lsp.buf.definition()
+    end
+    local function try(i)
+        local client = order[i]
+        if not client then
+            return vim.notify('No definition found', vim.log.levels.INFO)
+        end
+        local params = vim.lsp.util.make_position_params(win, client.offset_encoding)
+        client:request('textDocument/definition', params, function(err, result)
+            if err or not result or vim.tbl_isempty(result) then
+                return try(i + 1)
+            end
+            if result.uri or result.targetUri then result = { result } end
+            if not vim.api.nvim_win_is_valid(win) or vim.api.nvim_get_current_buf() ~= buf then return end
+            if #result == 1 then
+                vim.cmd("normal! m'")
+                vim.lsp.util.show_document(result[1], client.offset_encoding, { focus = true })
+            else
+                vim.fn.setqflist({}, ' ', { title = 'Definitions', items = vim.lsp.util.locations_to_items(result, client.offset_encoding) })
+                vim.cmd('botright copen')
+            end
+        end, buf)
+    end
+    try(1)
+end
+
 -- TypeScript 7 (the Go port) ships no tsserver.js for ts_ls to load, so a project on it gets its own
 -- `tsc --lsp` instead, and ts_ls (with its bundled TypeScript) keeps every other project.
 local ts_markers = { 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb', 'bun.lock', '.git' }

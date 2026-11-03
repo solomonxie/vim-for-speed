@@ -84,7 +84,7 @@ nnoremap  / :set hlsearch<cr>/
 nnoremap  ? :set hlsearch<cr>?
 nnoremap  * #:set hlsearch<cr>
 nnoremap  # *:set hlsearch<cr>
-nnoremap  !! /<C-r>+<CR>
+" nnoremap  !! /<C-r>+<CR>
 
 vnoremap <CR> "+y
 
@@ -275,7 +275,7 @@ autocmd FileType markdown nnoremap <buffer><silent> <leader>P :MarkdownPreview<C
 " map fw
 
 "vim/rcmodules/nerdtree.vim
-" ff/FF open nvim-lsp-tagbar's file tree (set in rcmodules/lua/misc-plugins.lua); nerdtree.vim is not sourced
+" ff opens nvim-lsp-tagbar's file tree, ! in it locks it open (set in rcmodules/lua/misc-plugins.lua); nerdtree.vim is not sourced
 " plugin defaults, not set by me (buffer-local inside NERDTree window): o/t/T/i/s/x/X/m/r/R/D/C/u/?/q ... see :help NERDTreeMappings
 
 "vim/after/ftplugin/netrw.vim

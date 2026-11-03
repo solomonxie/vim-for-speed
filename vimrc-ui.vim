@@ -57,6 +57,15 @@ endfunction
 call s:DiffColors()
 autocmd ColorScheme * call s:DiffColors()
 
+" Terminal resized (tmux pane, iTerm2 window): split the windows evenly again, instead of Neovim
+" taking all the lost width from the rightmost window. Sidebars set winfixwidth/winfixheight
+" (NERDTree, nvim-lsp-tagbar), so they keep their size. Background tabs are evened on return.
+augroup EqualizeOnResize
+    autocmd!
+    autocmd VimResized * wincmd = | for t in range(1, tabpagenr('$')) | call settabvar(t, 'resized', t != tabpagenr()) | endfor
+    autocmd TabEnter * if get(t:, 'resized', 0) | wincmd = | let t:resized = 0 | endif
+augroup END
+
 " ==========> ALTERNATIVES ===========>
     "colorscheme gruvbox  "20ms
     "colorscheme cobalt2 "100ms

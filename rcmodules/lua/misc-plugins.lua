@@ -84,25 +84,21 @@ end
 if string.find(vim.o['runtimepath'], 'nvim%-git%-flow') then
     require('nvim-git-flow').setup({
         base = 'HEAD',  -- :ChangeGitDiffBase switches it (no arg = where the branch forked from main)
-        -- same keys as with gitgutter, plus gD (diff tab) and tb (line blame)
-        keymaps = {
-            hunk_next = 'gn',
-            hunk_prev = 'gp',
-            hunk_preview = 'gP',
-            hunk_fold = 'gz',
-            hunk_stage = '<Leader>hs',
-            hunk_undo = '<Leader>hu',
-            diff_split = 'gD',
-            blame_toggle = 'tb',
-        },
     })
+    -- The plugin maps no keys. Same keys as with gitgutter, plus gD (diff tab) and tb (line blame).
+    -- No stage/undo keys: :GitHunkStage and :GitHunkUndo (asks y/n) when needed.
+    local gitsigns = require('nvim-git-flow.signs')
+    local map = function(key, rhs, desc) vim.keymap.set('n', key, rhs, { silent = true, desc = desc }) end
+    map('gn', gitsigns.next_hunk, 'Git: next hunk')
+    map('gp', gitsigns.prev_hunk, 'Git: previous hunk')
+    map('gP', gitsigns.preview_hunk, 'Git: preview hunk')
+    map('gz', gitsigns.toggle_fold, 'Git: fold all but hunks')
+    map('gD', '<Cmd>DiffSplit<CR>', 'Git: diff tab vs base')
+    map('tb', '<Cmd>GitBlameToggle<CR>', 'Git: toggle line blame')
 end
 
 if string.find(vim.o['runtimepath'], 'nvim%-lsp%-tagbar') then
     require('nvim-lsp-tagbar').setup({
-        -- no ft toggle: ff (below) opens the bar
-        -- keymap = 'ft',
-        keymap = false,
         -- left sidebar, as wide as NERDTree; j/k shows each symbol in the source window
         position = 'left',
         width = 50,

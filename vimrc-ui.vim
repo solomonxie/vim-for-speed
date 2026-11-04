@@ -66,6 +66,10 @@ augroup EqualizeOnResize
     autocmd TabEnter * if get(t:, 'resized', 0) | wincmd = | let t:resized = 0 | endif
 augroup END
 
+" Empty start screen (plain `nvim`): no line number; the first file you open gets it back
+autocmd VimEnter * if argc() == 0 && bufname('') == '' && line('$') == 1 && getline(1) == '' | setlocal nonumber | let w:start_nonumber = 1 | endif
+autocmd BufWinEnter * if get(w:, 'start_nonumber', 0) && bufname('') != '' | setlocal number | unlet w:start_nonumber | endif
+
 " ==========> ALTERNATIVES ===========>
     "colorscheme gruvbox  "20ms
     "colorscheme cobalt2 "100ms

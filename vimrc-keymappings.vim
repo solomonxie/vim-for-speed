@@ -296,7 +296,7 @@ autocmd FileType markdown nnoremap <buffer><silent> <leader>P :MarkdownPreview<C
 "Plug 'solomonxie/nvim-lsp-tagbar'
 " map ff (open the left bar, current file revealed; set in rcmodules/lua/misc-plugins.lua). ft is off (keymap = false)
 " buffer-local inside the bar: ]] / [[ next / prev view (files > changed > symbols > markers > changes), T change target branch, ! lock open, ? help, q/<Esc> close
-"   file tree: <CR>/o/double-click open, go preview, O open all, x close parent, s/i split, p parent, C/u root, R refresh, I dotfiles, m add/move/copy/delete, Y copy path
+"   file tree: <CR>/o/double-click open, go preview, O open all, x close parent, s/i split, p parent, C/u root, R refresh, I dotfiles, m add/move/copy/delete/reveal in Finder/run, Y copy path
 "   symbols: j/k preview symbol in the source window, o show/hide callers inline, <CR> jump to symbol, p jump to parent symbol
 
 "vim/rcmodules/fzf.vim

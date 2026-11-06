@@ -117,8 +117,7 @@ nnoremap <leader>R :call LoadSession()<CR><ESC>
 
 "Git blame current line
 " nnoremap gb :execute "!git blame -L " . line(".") . ",+1 % "<CR>
-" tb (toggle cursor-line blame), gD (diff tab vs the git diff base): nvim-git-flow, keys set in
-" rcmodules/lua/misc-plugins.lua
+" tb (blame), gD (diff tab vs git diff base): nvim-git-flow, keys in rcmodules/lua/misc-plugins.lua
 
 
 " --- CTRL + ALPHABET MAPPINGS ---
@@ -260,6 +259,7 @@ nnoremap <Leader>o :lua vim.lsp.diagnostic.set_qflist()<CR>
 autocmd FileType checkhealth,lspinfo nnoremap <buffer><silent><nowait> q :close<CR>
 " References (,u), quickfix and location lists
 autocmd FileType qf nnoremap <buffer><silent><nowait> q :call CloseWindowGoBack()<CR>
+autocmd FileType lsptagbar nnoremap <buffer><silent> ff <Cmd>lua require('nvim-lsp-tagbar').back()<CR>
 
 " Render to HTML and open in the browser: buffer-local so it only exists in markdown
 " (gp/gP are taken by nvim-git-flow hunk keys, see rcmodules/lua/misc-plugins.lua)
@@ -270,13 +270,14 @@ autocmd FileType markdown nnoremap <buffer><silent> <leader>P :MarkdownPreview<C
 " --- Plugin Keys ---
 "vim/rcmodules/misc.vim
 " map <LocalLeader>d
-" plugin defaults, not set by me: m=nvim-marks (overrides built-in set-mark), ds/cs/cS/ys/yS/yss/ySs/ySS=vim-surround, S/gS(visual)/<C-s>(insert)=vim-surround, ,c/,cc/,cu=vim-commentary, */#(visual)=vim-visual-star-search, <Leader>bd=bclose.vim
+nnoremap <silent> <nowait> m <Cmd>lua require('nvim-marks').openMarks()<CR>
+" plugin defaults, not mine: ds/cs/ys (vim-surround), ,c (vim-commentary), */# visual (visual-star), <Leader>bd (bclose)
 
 "vim/rcmodules/hop.vim
 " map fw
 
 "vim/rcmodules/nerdtree.vim
-" ff opens nvim-lsp-tagbar's file tree, ! in it locks it open (set in rcmodules/lua/misc-plugins.lua); nerdtree.vim is not sourced
+" ff: nvim-lsp-tagbar file tree, ! locks it open (misc-plugins.lua); nerdtree.vim not sourced
 " plugin defaults, not set by me (buffer-local inside NERDTree window): o/t/T/i/s/x/X/m/r/R/D/C/u/?/q ... see :help NERDTreeMappings
 
 "vim/after/ftplugin/netrw.vim
@@ -295,9 +296,9 @@ autocmd FileType markdown nnoremap <buffer><silent> <leader>P :MarkdownPreview<C
 
 "Plug 'solomonxie/nvim-lsp-tagbar'
 " map ff (open the left bar, current file revealed; set in rcmodules/lua/misc-plugins.lua). The plugin maps no global key
-" buffer-local inside the bar: ]] / [[ next / prev view (files > changed > symbols > markers > changes), T change target branch, ! lock open, ? help, q/<Esc> close
-"   file tree: <CR>/o/double-click open, go preview, O open all, x close parent, s/i split, p parent, C/u root, R refresh, I dotfiles, m add/move/copy/delete/reveal in Finder/run, Y copy path
-"   symbols: j/k preview symbol in the source window, o show/hide callers inline, <CR> jump to symbol, p jump to parent symbol
+" buffer-local inside the bar: ]] / [[ next / prev view (files > changed > symbols > markers > changes), T change target branch, ! lock open, ff back to the buffer, ? help, q/<Esc> close
+"   file tree: <CR>/o/double-click open, go preview, O open all, x close parent, s/i split, p parent, R refresh, I dotfiles, m add/move/copy/delete/reveal in Finder/run, Y copy path
+"   symbols: j/k preview, o callers inline, <CR> jump, p parent
 
 "vim/rcmodules/fzf.vim
 " map fd, map fa, map fb, map fh (command history), map fc (commands), map fm, map FD, map FA

@@ -85,8 +85,7 @@ if string.find(vim.o['runtimepath'], 'nvim%-git%-flow') then
     require('nvim-git-flow').setup({
         base = 'HEAD',  -- :ChangeGitDiffBase switches it (no arg = where the branch forked from main)
     })
-    -- The plugin maps no keys. Same keys as with gitgutter, plus gD (diff tab) and tb (line blame).
-    -- No stage/undo keys: :GitHunkStage and :GitHunkUndo (asks y/n) when needed.
+    -- No keys from the plugin: same as gitgutter plus gD (diff tab), tb (blame); :GitHunkStage/:GitHunkUndo.
     local gitsigns = require('nvim-git-flow.signs')
     local map = function(key, rhs, desc) vim.keymap.set('n', key, rhs, { silent = true, desc = desc }) end
     map('gn', gitsigns.next_hunk, 'Git: next hunk')
@@ -122,14 +121,6 @@ if string.find(vim.o['runtimepath'], 'nvim%-lsp%-tagbar') then
             },
         },
     })
-    -- ff: open the bar with the current file revealed, or jump into it if it's open.
-    -- In the bar, ! locks it open (stays after opening a file or leaving it); ! again unlocks.
+    -- ff: open the bar on the current file, or jump into it; ! in the bar locks it open.
     vim.keymap.set('n', 'ff', require('nvim-lsp-tagbar').find, { desc = 'File tree, current file revealed' })
-    -- ff in the bar: back to the buffer, the bar stays open
-    vim.api.nvim_create_autocmd('FileType', {
-        pattern = 'lsptagbar',
-        callback = function(ev)
-            vim.keymap.set('n', 'ff', require('nvim-lsp-tagbar').back, { buffer = ev.buf, desc = 'Back to the buffer' })
-        end,
-    })
 end

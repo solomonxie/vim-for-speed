@@ -6,7 +6,7 @@
 let g:fzf_preview_window = ['right:40%', 'ctrl-/']  " up|down|left|right
 
 let $FZF_DEFAULT_OPTS='--layout=reverse --info=inline'
-" --no-ignore-vcs: skip .gitignore (so .env etc. are findable); junk stays excluded via ~/.config/fd/ignore (etc/fd/ignore)
+" --no-ignore-vcs: ignore .gitignore (.env findable); junk excluded via ~/.config/fd/ignore
 let $FZF_DEFAULT_COMMAND="fd --type f --type l --hidden --follow --no-ignore-vcs"
 " command! -bang -nargs=? -complete=dir Files
 "         \ call fzf#vim#files(<q-args>, { 'options': "--prompt '>' $FZF_DEFAULT_OPTS"}, <bang>0)

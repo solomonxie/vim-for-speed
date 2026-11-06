@@ -125,4 +125,11 @@ if string.find(vim.o['runtimepath'], 'nvim%-lsp%-tagbar') then
     -- ff: open the bar with the current file revealed, or jump into it if it's open.
     -- In the bar, ! locks it open (stays after opening a file or leaving it); ! again unlocks.
     vim.keymap.set('n', 'ff', require('nvim-lsp-tagbar').find, { desc = 'File tree, current file revealed' })
+    -- ff in the bar: back to the buffer, the bar stays open
+    vim.api.nvim_create_autocmd('FileType', {
+        pattern = 'lsptagbar',
+        callback = function(ev)
+            vim.keymap.set('n', 'ff', require('nvim-lsp-tagbar').back, { buffer = ev.buf, desc = 'Back to the buffer' })
+        end,
+    })
 end

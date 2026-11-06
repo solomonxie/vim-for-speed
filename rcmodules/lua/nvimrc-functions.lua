@@ -43,9 +43,7 @@ function LspRename()
 end
 
 
--- gf on "path:15", "path:15:3", "path:L15" or "path:L12-30" opens path at that line
--- (plain gF already does "path:15" but not the ":L15" form). Paths are tried as given, then from the
--- current file's dir, then from the git root. Anything else falls back to the built-in gF.
+-- gf on path:15, path:15:3, path:L15, path:L12-30; tries as given, file dir, git root; else gF.
 local function goto_file_line()
     local line, col = vim.fn.getline('.'), vim.fn.col('.')
     local init = 1

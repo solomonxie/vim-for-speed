@@ -29,8 +29,7 @@ vim.lsp.config('pylsp', {
             -- ^ Have to specifically everything "enabled=false" otherwise enabled by default
         }
     },
-    -- pylsp runs in Mason's own venv, so jedi can't see the project's packages (e.g. google.cloud)
-    -- and gd on them finds nothing. Point jedi at the project's .venv, else an activated $VIRTUAL_ENV.
+    -- pylsp runs in Mason's venv: point jedi at the project's .venv or $VIRTUAL_ENV so gd finds packages.
     before_init = function(_, config)
         local venv = config.root_dir and config.root_dir .. '/.venv' or ''
         if vim.fn.executable(venv .. '/bin/python') ~= 1 then

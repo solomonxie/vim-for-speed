@@ -1,6 +1,4 @@
--- GitBlameToggle() (`tb`, see vimrc-keymappings.vim): blame of the cursor line as end-of-line virtual text.
--- The whole file is blamed once in the background and kept per buffer, so moving the cursor is instant.
--- Re-blamed after edits, from the buffer's current text (--contents -), so unsaved edits keep lines right.
+-- GitBlameToggle() (`tb`): cursor-line blame as virtual text; file blamed once, redone on edits.
 
 local ns = vim.api.nvim_create_namespace('git_blame')
 local group = vim.api.nvim_create_augroup('GitBlame', { clear = true })
@@ -27,7 +25,6 @@ local function blame()
         if res.code ~= 0 and not res.stderr:match('no such path') then
             return
         end
-        -- One block per line, in order: header fields, then the line itself after a tab
         local lines, info = {}, {}
         for line in res.stdout:gmatch('[^\n]+') do
             if line:sub(1, 1) == '\t' then
@@ -37,7 +34,6 @@ local function blame()
                     or string.format('%s, %s - %s', info.author, days == 0 and 'today' or days .. ' days ago', info.summary))
             else
                 local key, value = line:match('^(%S+) (.*)')
-                -- the block's first line is "<commit id> <line numbers>"
                 info[#key == 40 and 'commit' or key] = #key == 40 and key or value
             end
         end
@@ -51,7 +47,7 @@ end
 function GitBlameToggle()
     local on = #vim.api.nvim_get_autocmds({ group = group }) == 0
     vim.api.nvim_clear_autocmds({ group = group })
-    -- every buffer, not just this one: the others keep the text of the last line shown in them
+    -- every buffer: the others keep the last shown line's text
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
         vim.api.nvim_buf_clear_namespace(buf, ns, 0, -1)
     end

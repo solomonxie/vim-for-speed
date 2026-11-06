@@ -12,28 +12,22 @@ Plug 'scrooloose/nerdtree', {'on': ['NERDTreeToggle', 'NERDTreeFind', 'NERDTree'
 ">> Key Mappings
 nnoremap <Leader>f :<C-U>let g:NERDTreeQuitOnOpen = 0 \| call NerdTreeAtProjectRoot()<CR>
 " nnoremap <Leader>F :NERDTreeFind<CR>zz
-" ff: the tree closes once a file is opened from it. FF: it stays open.
-" NERDTree reads NERDTreeQuitOnOpen on every open, so the key last used decides.
+" ff: tree closes after opening a file; FF: stays open (the key used last decides)
 nnoremap ff :<C-U>let g:NERDTreeQuitOnOpen = 1 \| call NerdTreeFindOrRoot()<CR>zz
 nnoremap FF :<C-U>let g:NERDTreeQuitOnOpen = 0 \| call NerdTreeFindOrRoot()<CR>zz
-" In the tree, NERDTree's own buffer-local F (toggle files) and f (toggle filters) win over the
-" global FF/ff, so they never switched the mode there; map them in the tree too
+" NERDTree's buffer-local F/f beat the global FF/ff, so map them in the tree too
 autocmd FileType nerdtree nnoremap <buffer><silent> ff :<C-U>let g:NERDTreeQuitOnOpen = 1<CR>
 autocmd FileType nerdtree nnoremap <buffer><silent> FF :<C-U>let g:NERDTreeQuitOnOpen = 0<CR>
 
-" Symlinks are never resolved: a file opened through a symlinked folder is shown in the tree
-" under that folder, as if it were a plain one. NERDTree itself resolves them (:NERDTree <dir>,
-" :NERDTreeFind), so ff/FF and the follow-current-file reveal below go through s:NerdTreeReveal.
+" Symlinks stay unresolved here; ff/FF and follow-file reveal go through s:NerdTreeReveal
 
-" Full path of the current buffer as it was opened, symlinked folders kept. nvim resolves
-" them in expand('%:p') / the buffer's full name, but bufname() keeps the path as typed,
-" relative to the cwd (also unresolved: getcwd() is $PWD's view).
+" Full path of the buffer as typed, symlinked folders kept (expand('%:p') resolves them)
 function! s:NerdTreeBufPath() abort
     let l:name = bufname('%')
     if empty(l:name)
         return ''
     endif
-    " a leading ~ is the only thing to expand; fnamemodify()/expand() on the whole name resolve links
+    " only a leading ~ is expanded; fnamemodify()/expand() resolve links
     let l:name = substitute(l:name, '^\~\ze\(/\|$\)', escape($HOME, '\&'), '')
     let l:full = l:name =~# '^/' ? l:name : getcwd() . '/' . l:name
     " drop ./ and ../ without resolving links
@@ -48,20 +42,17 @@ function! s:NerdTreeBufPath() abort
     let l:full = '/' . join(l:parts, '/')
     " only trust it if it's the same file
     let l:full = resolve(l:full) ==# resolve(expand('%:p')) ? l:full : expand('%:p')
-    " a work file opened by its real path: shown through the cwd checkout's link to it (tmp/workfiles), in that repo
+    " work file opened by real path: show it via the cwd checkout's tmp/workfiles link
     if exists('g:loaded_workfiles')
         let l:full = v:lua.require('workfiles').link_path(l:full)
     endif
     return l:full
 endfunction
 
-" Git root of the current file as reached through its path, else the cwd: the nearest folder up
-" the unresolved path with a .git (a folder, or a file in a worktree). Not git rev-parse, which
-" resolves links: a file under a link out of the repo (tmp -> ~/dot/...) got the target's repo.
+" Git root of the current file by its unresolved path (git rev-parse resolves links), else cwd
 function! s:NerdTreeProjectRoot() abort
     let l:dir = empty(expand('%')) ? getcwd() : fnamemodify(s:NerdTreeBufPath(), ':h')
-    " inside a git dir (e.g. the .git/tmp/workfiles link to work files): the checkout it belongs to,
-    " found from a worktree's gitdir file (<checkout>/.git), else the folder holding .git
+    " inside a git dir (e.g. .git/tmp/workfiles link): use the checkout it belongs to
     let l:wt = matchstr(l:dir, '^.*/\.git/worktrees/[^/]\+')
     if !empty(l:wt) && filereadable(l:wt . '/gitdir')
         return fnamemodify(trim(readfile(l:wt . '/gitdir', '', 1)[0]), ':h')
@@ -90,8 +81,7 @@ function! s:NerdTreeOpenAt(root) abort
     call g:NERDTreeCreator.CreateTabTree(g:NERDTreePath.New(a:root).str())
 endfunction
 
-" Reveal `file` in the tab's tree and put the cursor on it, by its path as given.
-" Returns 0 when it's not under the tree root.
+" Reveal `file` in the tab's tree with the cursor on it; 0 if not under the tree root.
 function! s:NerdTreeReveal(file) abort
     let l:path = g:NERDTreePath.New(a:file)
     let l:tree = g:NERDTree.ForCurrentTab()
@@ -143,9 +133,7 @@ let NERDTreeQuitOnOpen=0   " Keep NERDTree open after opening a file (ff sets 1,
 let NERDTreeMinimalUI=1    " Start NERDTree in minimal UI mode (No help lines)
 let NERDTreeDirArrows=1    " Display arrows instead of ascii art in NERDTree
 let NERDTreeHighlightCursorline = 1  "Conflict with other addon-plugins for nerdtree
-" No '*' and green highlight on executable files: clear the flag before NERDTree draws the name.
-" The 'init'/'refresh' path events fire right before each name is (re)cached. Registered on
-" vim-plug's `User nerdtree`, fired as the lazy-loaded plugin loads, before the first tree is built.
+" Clear the executable flag before NERDTree draws the name (no '*', no green); hooked on User nerdtree
 function! s:NerdTreeNotExecutable(event) abort
     let a:event.subject.isExecutable = 0
 endfunction
@@ -193,8 +181,7 @@ function! SafeNERDTreeQuit() abort
 endfunction
 autocmd FileType nerdtree nnoremap <buffer> q :call SafeNERDTreeQuit()<CR>
 
-" Pin the side tree to its window: = - :bn :bp would swap a file into it.
-" Only for the side (tab) tree -- a window tree replaces itself by design.
+" Pin the side tree to its window (:bn/:bp would swap a file into it); window trees excluded
 function! s:PinNerdTreeWindow() abort
     if exists('b:NERDTree') && b:NERDTree.isTabTree()
         setlocal winfixbuf
@@ -203,20 +190,16 @@ function! s:PinNerdTreeWindow() abort
     endif
 endfunction
 autocmd User NERDTreeInit call s:PinNerdTreeWindow()
-" winfixbuf is window-local: reopening the tree (toggle, ,f) puts the existing
-" buffer in a new window without NERDTreeInit, so re-pin it. Otherwise quickfix
-" <CR> may pick the tree as the previous window and open the file there.
+" winfixbuf is window-local: re-pin on reopen, or quickfix <CR> may open files in the tree
 autocmd BufWinEnter NERD_tree_tab_* call s:PinNerdTreeWindow()
-" conceallevel is window-local and NERDTree sets it only when the buffer is built;
-" a new window takes the global 0 (markdown.lua) and shows the ^G delimiters
+" conceallevel is window-local: a new window takes global 0 and shows ^G delimiters
 autocmd BufWinEnter,WinEnter NERD_tree_* setlocal conceallevel=2 concealcursor=nvic
 
-" Auto-refresh NERDTree root every 10 seconds, replacing manual R press.
+" Auto-refresh the root every 10 seconds
 " Timer only runs while the NERDTree buffer is open.
 let s:nerdtree_refresh_timer = -1
 
-" A refresh re-reads the whole tree from disk (~600ms with ~1000 lines open),
-" blocking j/k -- so hold it off while the cursor is moving in the tree.
+" Refresh blocks j/k (~600ms on big trees): hold off while the cursor is moving
 let s:nerdtree_last_move = 0.0
 autocmd CursorMoved NERD_tree_* let s:nerdtree_last_move = reltimefloat(reltime())
 
@@ -224,8 +207,7 @@ function! s:NerdTreeAutoRefresh(timer) abort
     if reltimefloat(reltime()) - s:nerdtree_last_move < 2
         return
     endif
-    " Only while the cursor is in the tree, in normal mode. From another window the
-    " refresh hops into the tree and back, which drops a visual selection there
+    " Normal mode in the tree only: a refresh from another window drops a visual selection
     if &filetype !=# 'nerdtree' || mode(1) !=# 'n'
         return
     endif
@@ -233,9 +215,7 @@ function! s:NerdTreeAutoRefresh(timer) abort
     silent! call s:NerdTreeGitHighlight()
 endfunction
 
-" Highlight dirty files/folders in NERDTree, and grey out git-ignored ones. Base is
-" GitDiffBase() (vimrc-functions.vim), default HEAD. Git is re-queried at most every 3s.
-" Own colors rather than Diff* links: badwolf's DiffChange is a near-invisible bg
+" Highlight dirty and git-ignored files vs GitDiffBase(), git re-queried every 3s at most
 function! s:NerdTreeGitHighlightColors() abort
     highlight default NERDTreeGitDirtyFile cterm=bold ctermfg=154 gui=bold guifg=#aeee00
     highlight default NERDTreeGitDirtyDir ctermfg=154 guifg=#aeee00
@@ -246,12 +226,11 @@ endfunction
 call s:NerdTreeGitHighlightColors()
 autocmd ColorScheme * call s:NerdTreeGitHighlightColors()
 let s:git_dirty = {}
-" Ignored paths; an ignored dir is listed once (git's --directory) and covers everything in it
+" Ignored dir is listed once (git --directory) and covers its contents
 let s:git_ignored = {}
 let s:git_dirty_key = ''
 let s:git_dirty_at = 0.0
-" '(ign)' after the name of each ignored file/dir (not repeated for what's inside an ignored dir),
-" and '(sym)' / '(hard)' / '(exc)' after symlinks, hard-linked files and executables
+" '(ign)' / '(sym)' / '(hard)' / '(exc)' after the name
 let s:git_ignored_ns = has('nvim') ? nvim_create_namespace('nerdtree_git_ignored') : -1
 
 function! s:NerdTreeGitDirtySet(root) abort
@@ -264,7 +243,7 @@ function! s:NerdTreeGitDirtySet(root) abort
     let s:git_dirty_at = reltimefloat(reltime())
     let s:git_dirty = {}
     let s:git_ignored = {}
-    " Paths relative to the tree root (not the git toplevel) so symlinked roots match
+    " Paths relative to the tree root so symlinked roots match
     let l:git = 'git -C ' . shellescape(a:root) . ' '
     call system(l:git . 'rev-parse --git-dir')
     if v:shell_error != 0
@@ -305,8 +284,7 @@ function! s:NerdTreeGitHighlight() abort
         return
     endif
     let b:nerdtree_git_hl_sig = l:sig
-    " One top-down pass tracking the dir at each indent level. ui.getPath()
-    " walks upward per line, which is O(n^2) and froze big trees for seconds.
+    " One top-down pass tracking the dir per indent level (ui.getPath() per line is O(n^2))
     let l:ui = b:NERDTree.ui
     let l:dirs = {}
     " whether the dir at each indent level is ignored, so its contents are too
@@ -370,8 +348,7 @@ function! s:NerdTreeGitHighlight() abort
     noautocmd call win_gotoid(l:curWin)
 endfunction
 
-" 'sym' for a symlink, 'hard' for a file with other hard links to it, 'exc' for an
-" executable file, else ''. getftype() doesn't follow links; nvim's lstat has the link count.
+" 'sym', 'hard' (other hard links), 'exc' (executable), else ''; getftype() doesn't follow links
 function! s:NerdTreeLinkKind(path) abort
     let l:type = getftype(a:path)
     if l:type ==# 'link'
@@ -399,12 +376,11 @@ endfunction
 
 if has('timers')
     autocmd FileType nerdtree call s:StartNerdTreeAutoRefresh()
-    " BufWinLeave stops the timer, but reshowing the buffer doesn't re-fire FileType
+    " BufWinLeave stops the timer; reshowing the buffer doesn't re-fire FileType
     autocmd BufWinEnter NERD_tree_* call s:StartNerdTreeAutoRefresh()
     autocmd BufWinLeave NERD_tree_* call s:StopNerdTreeAutoRefresh()
 endif
-" Open/close re-renders the buffer and shifts lines; re-highlight right away
-" instead of waiting for the next timer tick (git set is cached, so this is cheap)
+" Re-highlight right away after open/close shifts lines (git set is cached)
 autocmd TextChanged NERD_tree_* silent! call s:NerdTreeGitHighlight()
 " :ChangeGitDiffBase (vimrc-functions.vim) -- drop the cached git set and repaint now
 autocmd User GitDiffBaseChanged let s:git_dirty_key = '' | silent! call s:NerdTreeGitHighlight()
@@ -431,8 +407,7 @@ let g:NERDTreeIndicatorMapCustom = {
 
 
 " --- Customized Abilities on Nerdtree ---
-" O on a file opens it like <CR>/o (NERDTree only binds O on folders: expand recursively), so ff's
-" close-on-open applies to it too. Added on NERDTreeInit: the plugin is lazy-loaded.
+" O on a file opens it like <CR>/o so ff's close-on-open applies; added on NERDTreeInit (lazy-loaded)
 function! NerdTreeOpenFileNode(node) abort
     call a:node.activate({'reuse': 'all', 'where': 'p', 'keepopen': !nerdtree#closeTreeOnOpen()})
 endfunction
@@ -482,9 +457,7 @@ endif
 
 
 " ============= End of File ==================
-" Follow the current buffer: reveal it in the open tree without taking focus.
-" Only for files under the tree root, so the root never jumps. Opening from the
-" tree itself runs under eventignore=all and is already highlighted anyway.
+" Follow the current buffer: reveal it in the open tree without taking focus, files under root only
 let s:nerdtree_revealing = 0
 function! s:NerdTreeRevealCurrent() abort
     if s:nerdtree_revealing || !exists('g:NERDTree') || !g:NERDTree.IsOpen()
@@ -512,15 +485,10 @@ function! s:NerdTreeRevealCurrent() abort
 endfunction
 autocmd BufEnter * call s:NerdTreeRevealCurrent()
 
-" Only NERDTree left in the tab:
-" - after :q/:wq/ZZ (QuitPre) -> quit nvim, as before the tree stayed open.
-"   Unsaved hidden buffers block the quit; show one of them instead.
-" - after :bdelete (,q), which closes every window showing the buffer -> keep
-"   the tree and open an empty window beside it.
-" Deferred because layout changes are not allowed mid-:quit/:bdelete.
+" Only NERDTree left in the tab: :q/ZZ quits nvim (shows an unsaved hidden buffer), :bdelete opens an empty window
 let s:nerdtree_quit_requested = 0
 autocmd QuitPre * let s:nerdtree_quit_requested = 1
-" QuitPre also fires for :q on a split with other windows left; drop it once idle
+" QuitPre also fires for :q on a split with other windows; drop it once idle
 if exists('##SafeState')
     autocmd SafeState * let s:nerdtree_quit_requested = 0
 endif

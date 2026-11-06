@@ -227,8 +227,7 @@ au FocusGained,BufEnter * :checktime
 if !exists('g:autoread_timer')
     let g:autoread_timer = timer_start(2000, {-> execute('silent! checktime')}, {'repeat': -1})
 endif
-" A file deleted outside vim: nvim's own E211 warning freezes input for ~1s. Say it ourselves
-" instead (after the check, or it's wiped); anything else gets nvim's usual handling.
+" Deleted-outside file: say it ourselves (nvim's E211 warning freezes input ~1s)
 function! s:FileChangedShell() abort
     if v:fcs_reason ==# 'deleted'
         let s:fcs_msg = 'File no longer available: ' . expand('<afile>')

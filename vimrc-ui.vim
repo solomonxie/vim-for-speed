@@ -45,9 +45,7 @@ let g:enable_badwolf_mysql = 0
 let g:enable_badwolf_slimv = 0
 colorscheme badwolf  "16ms after my fork
 
-" Diff mode (:DiffSplit, nvim -d): badwolf's DiffAdd is a gray bg with black text, and DiffDelete
-" is solid black, so added lines read as greyed out. Green = added, red filler = deleted,
-" amber = changed line, brighter amber = the changed words. Same tints as the gitgutter line colors.
+" Diff mode: badwolf's DiffAdd/DiffDelete read greyed out; green added, red deleted, amber changed (as gitgutter)
 function! s:DiffColors() abort
     highlight DiffAdd    cterm=NONE ctermfg=NONE ctermbg=22  gui=NONE guifg=NONE guibg=#1a3a24
     highlight DiffDelete cterm=NONE ctermfg=52   ctermbg=52  gui=NONE guifg=#3a1a1a guibg=#3a1a1a
@@ -57,9 +55,7 @@ endfunction
 call s:DiffColors()
 autocmd ColorScheme * call s:DiffColors()
 
-" Terminal resized (tmux pane, iTerm2 window): split the windows evenly again, instead of Neovim
-" taking all the lost width from the rightmost window. Sidebars set winfixwidth/winfixheight
-" (NERDTree, nvim-lsp-tagbar), so they keep their size. Background tabs are evened on return.
+" On terminal resize, even out the splits (sidebars keep size via winfix*); background tabs on return
 augroup EqualizeOnResize
     autocmd!
     autocmd VimResized * wincmd = | for t in range(1, tabpagenr('$')) | call settabvar(t, 'resized', t != tabpagenr()) | endfor
@@ -319,8 +315,7 @@ augroup END
 call s:ApplyDocumentHighlightColors()
 
 lua <<EOF
--- Document highlight (occurrences of word under cursor), debounced on
--- CursorMoved instead of CursorHold so it's not tied to 'updatetime'.
+-- Document highlight, debounced on CursorMoved instead of CursorHold ('updatetime')
 local HIGHLIGHT_DEBOUNCE_MS = 120
 
 vim.api.nvim_create_autocmd('LspAttach', {

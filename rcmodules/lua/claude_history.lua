@@ -104,8 +104,7 @@ local function demote(text, out)
 end
 
 -- Cheap scan for pickers: prompts and title without decoding every record.
--- Worktrees a `git worktree add` run by the Bash tool in this jsonl line made: adds[folder name] = the cwd
--- it ran in. Any other path argument's last component goes in too, and just won't match a worktree.
+-- Worktrees made by a `git worktree add` in this jsonl line: adds[folder name] = cwd it ran in.
 local function worktree_adds(line, adds)
     if not (line:find('git worktree add', 1, true) and line:find('"name":"Bash"', 1, true)) then return end
     local cwd = line:match('"cwd":"([^"]*)"')
@@ -330,8 +329,7 @@ local function inside(path, root)
     return path == root or vim.startswith(path, root .. '/')
 end
 
--- The worktree of the repo a path is in: the innermost of scope.roots holding it, or a removed
--- worktree, a <main checkout>-* sibling that's no longer on disk. nil if it's outside the repo.
+-- Worktree a path is in: innermost of scope.roots, or a removed <main>-* sibling; nil if outside.
 local function node_of(path, scope)
     local best
     for _, root in ipairs(scope.roots) do
@@ -342,8 +340,7 @@ local function node_of(path, scope)
     if gone and not vim.uv.fs_stat(gone) then return gone end
 end
 
--- The worktree a session is shown under: where you typed most of its prompts. `outside` sessions are
--- stored outside the repo, so those with no prompt in it get nil; the rest fall back to their project dir.
+-- Worktree a session is shown under: where most prompts were typed; nil if outside the repo.
 local function session_home(f, s, scope, outside)
     local counts, home, most = {}, nil, 0
     for cwd, n in pairs(s.cwds) do
@@ -361,8 +358,7 @@ local function session_home(f, s, scope, outside)
     return scope.roots[1]
 end
 
--- Running Claude processes, by session id: { pid, cwd, tmux pane id } from ~/.claude/sessions/<pid>.json.
--- Those files can outlive a crashed process, so the pid is checked too.
+-- Running Claude processes by session id, from ~/.claude/sessions/<pid>.json (pid is checked).
 local function live_sessions()
     local live = {}
     for _, f in ipairs(vim.fn.glob(vim.fn.expand('~/.claude/sessions') .. '/*.json', false, true)) do
@@ -376,9 +372,7 @@ end
 
 local function session_id(jsonl) return vim.fn.fnamemodify(jsonl, ':t:r') end
 
--- Sessions newest first, each with its worktree folder, title and prompts: every session of the repo
--- and its worktrees (also removed ones), from any of them, each with the worktree it's shown under
--- (`home`). `all`: every project. Also returns the repo scope, nil with `all`.
+-- Sessions newest first, for the repo and all its worktrees (incl. removed); `all`: every project.
 local function session_entries(all)
     local files, scope = {}, nil
     if all then
@@ -390,8 +384,7 @@ local function session_entries(all)
             vim.list_extend(files, vim.fn.glob(d .. '/*.jsonl', false, true))
         end
     end
-    -- and sessions started outside the repo (e.g. in its parent dir) that cd'd into it later, or of removed
-    -- worktrees: they're stored under the dir they started in. grep is a quick prefilter; session_home() decides.
+    -- also sessions started outside the repo or in removed worktrees; grep prefilters, session_home() decides.
     local outside = {}
     if scope then
         local listed = {}
@@ -432,11 +425,7 @@ local function session_entries(all)
     return entries, scope
 end
 
--- The repo as a tree of worktrees, the main checkout at the top. A worktree goes under the one whose
--- session made it (`git worktree add`), e.g. a plan's impl worktrees; if that ran in the main checkout,
--- under the worktree it's named after (<that>-<suffix>), but <X>-plan not under X: a plan starts a new
--- branch of the tree. Removed worktrees stay while they have sessions.
--- Node: { path, gone, sessions (newest first), kids (latest activity first), total, latest }.
+-- Worktree tree: nest under the worktree whose session made it (<X>-plan starts a new branch).
 local function session_tree(entries, scope)
     local main, nodes = scope.roots[1], {}
     local function node(path)
@@ -502,8 +491,7 @@ local function session_tree(entries, scope)
     return nodes[main]
 end
 
--- Where to put the pane's cursor for a location in worktree node `n`: its newest session, else the
--- newest one in the worktrees under it, else the worktree's own row.
+-- Pane cursor target for worktree node `n`: newest session in it or below, else its own row.
 local function nearest(n)
     if n.sessions[1] then return { jsonl = n.sessions[1].file, shut = true } end
     for _, k in ipairs(n.kids) do
@@ -524,9 +512,7 @@ end
 -- transcript buffers
 ---------------------------------------------------------------------------
 
--- One scratch buffer named BUFNAME shows whichever session is selected: switching session loads
--- the other rendered md into it, and b:claude_md says which one it holds. A rendered md opened
--- directly (:e) is a normal file buffer instead.
+-- One scratch buffer BUFNAME shows the selected session; b:claude_md says which md it holds.
 local BUFNAME = 'Claude history'
 local transcript = { buf = nil }
 
@@ -540,13 +526,11 @@ local function is_transcript(buf)
     return jsonl ~= nil and vim.uv.fs_stat(jsonl) ~= nil
 end
 
--- Fold level per line: your prompts (heading, timestamp, quoted text) stay open and everything
--- Claude wrote after each one is a fold. Cached per changedtick.
+-- Fold level per line: prompts stay open, Claude's reply after each is a fold. Cached per changedtick.
 local fold_cache = {}
 local TIMESTAMP = '^%*%d%d%d%d%-%d%d%-%d%d %d%d:%d%d%*$'
 
--- 0 for the title block and each prompt block (heading, timestamp, quoted prompt), 1 for the
--- reply that follows it. A prompt block ends at the first line after its quote that isn't '>'.
+-- 0 for title and prompt blocks, 1 for the reply; a prompt ends at the first non-'>' line after its quote.
 local function fold_levels(buf)
     local tick = vim.api.nvim_buf_get_changedtick(buf)
     local cached = fold_cache[buf]
@@ -628,8 +612,7 @@ local function setup_transcript(buf)
             vim.cmd('normal! zt')
         end
     end
-    -- Set now so the keys work the moment the transcript shows, and again once
-    -- nvim-treesitter-textobjects has clobbered buffer-local ]]/[[ after FileType (see python.lua).
+    -- Set now, and again after nvim-treesitter-textobjects clobbers buffer-local ]]/[[ (see python.lua).
     local function map_keys()
         if not vim.api.nvim_buf_is_valid(buf) then return end
         local o = { buffer = buf, silent = true, nowait = true }
@@ -651,8 +634,7 @@ end
 -- Point buf at md and (re)read it from disk.
 local function load_into(buf, md)
     if vim.b[buf].claude_md then
-        -- Stop treesitter first, so an async parse of the old text can't read past the new end
-        -- ("treesitter.lua: Index out of bounds"). Setting the filetype restarts it.
+        -- Stop treesitter first: an async parse of the old text can read past the new end; FileType restarts it.
         pcall(vim.treesitter.stop, buf)
         vim.bo[buf].readonly = false
         vim.bo[buf].modifiable = true
@@ -677,8 +659,7 @@ local function load_into(buf, md)
             end
         end
     end
-    -- Stop treesitter first: an async parse of the old text still running after edit! swaps
-    -- the lines reads past the new end ("treesitter.lua: Index out of bounds"). FileType restarts it.
+    -- Stop treesitter first: an async parse of the old text can read past the new end; FileType restarts it.
     pcall(vim.treesitter.stop, buf)
     vim.api.nvim_buf_call(buf, function()
         vim.bo.modifiable = true
@@ -686,8 +667,7 @@ local function load_into(buf, md)
     end)
 end
 
--- Re-read the transcript after its md was rewritten, keeping each window's view
--- (or sticking to the bottom if that's where it was).
+-- Re-read the transcript after its md was rewritten, keeping each window's view.
 local function reload(buf, md)
     local views = {}
     local last = vim.api.nvim_buf_line_count(buf)
@@ -774,8 +754,7 @@ end
 
 local last_sent -- session id last sent to, preferred next time
 
--- Running sessions in tmux among the pane's sessions (this repo and its worktrees, or every project
--- with `all`): the last one sent to first, then those whose cwd holds `path`, then most recently active.
+-- Running tmux sessions among the pane's: last sent to first, then cwd holding `path`, then most recent.
 local function send_candidates(path, all)
     local live, list = live_sessions(), {}
     for _, e in ipairs(session_entries(all)) do
@@ -797,8 +776,7 @@ local function send_candidates(path, all)
     return list
 end
 
--- Once the session has recorded the prompt just sent (it has more than `before` prompts), show its
--- transcript in this window at that prompt. Gives up after ~15s, e.g. if the paste never got submitted.
+-- Show the sent prompt's transcript once the session records it; gives up after ~15s.
 local function show_sent(jsonl, before, win)
     local tries = 0
     local timer = vim.uv.new_timer()
@@ -828,8 +806,7 @@ local function paste_to(s, text)
     show_sent(s.jsonl, before, win)
 end
 
--- Ask for a prompt and send "<file>:L<l1>-<l2>" plus it to a running session.
--- `pick`: always choose from the list of running sessions. `all`: from every project, not just this repo's.
+-- Ask for a prompt and send it with <file>:L<l1>-<l2>; `pick`: always choose; `all`: every project.
 function M.send(l1, l2, pick, all)
     local path = vim.api.nvim_buf_get_name(0)
     local cands = send_candidates(path ~= '' and path or vim.fn.getcwd(), all)
@@ -937,9 +914,7 @@ local HELP = {
     '  session follows. Running = a live pid in ~/.claude/sessions/<pid>.json.',
 }
 
--- Lines, highlight spans and per-line items for the pane (help lines get a { help = true } item).
--- Every row's item has its fold level: worktree rows open at their depth, a session one deeper,
--- its prompts one deeper than that. With `all` (no tree) sessions are at level 1.
+-- Pane lines, highlight spans and per-line items (with fold levels).
 local function build(entries, tree)
     local lines, marks, items = {}, {}, {}
     local function add(segments, item)
@@ -1026,9 +1001,7 @@ function _G.ClaudeHistoryPaneFold()
     return it.n and tostring(it.level - 1) or ('>' .. it.level)
 end
 
--- (Re)draw the pane. Keeps open folds and the cursor; `target` puts the cursor there instead:
--- { jsonl, n } a session or prompt (`shut`: leave the session's prompts folded), or { node } a worktree.
--- Only the folds holding the cursor are open the first time.
+-- (Re)draw the pane keeping folds and cursor; `target` { jsonl, n } or { node } moves the cursor there.
 local function render_pane(target)
     local opened, cur = {}, nil
     vim.api.nvim_win_call(pane.win, function()
@@ -1191,14 +1164,12 @@ function M.pane_toggle(all)
     vim.keymap.set('n', 'ft', M.pane_close, o)
     vim.keymap.set('n', 'q', function() if pane.help then toggle_help() else M.pane_close() end end, o)
     vim.keymap.set('n', '?', toggle_help, o)
-    -- Scheduled: autocmds don't nest, so loading the transcript from inside CursorMoved
-    -- would skip its BufRead/FileType handlers (no markdown highlighting, no keys).
+    -- Scheduled: autocmds don't nest, so loading from CursorMoved would skip BufRead/FileType handlers.
     vim.api.nvim_create_autocmd('CursorMoved', {
         buffer = pane.buf,
         callback = function() vim.schedule(function() if pane_open() then follow(false) end end) end,
     })
-    -- Show the row under the cursor (the latest session) right away; render_pane marked it as
-    -- already shown, so the first follow() would skip it until the cursor moved.
+    -- Show the row under the cursor now; render_pane marked it shown, so follow() would skip it.
     pane.last = nil
     vim.schedule(function() if pane_open() then follow(false) end end)
 end

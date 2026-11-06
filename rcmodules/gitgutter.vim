@@ -33,10 +33,7 @@ let g:gitgutter_sign_removed = '▎'  "The char '▎' is shown as a highlight ba
 highlight GitGutterAdd guifg=green ctermfg=green
 highlight GitGutterChange guifg=yellow ctermfg=yellow
 highlight GitGutterDelete guifg=red ctermfg=red
-" Line bg for added/changed lines. Removed lines no longer exist in the buffer,
-" so gitgutter would paint the line *below* them; keep that one blank and rely
-" on the red sign instead. Re-applied on ColorScheme since `colorscheme` runs
-" later in nvimrc and clears highlights.
+" Line bg for added/changed lines only; re-applied on ColorScheme (colorscheme runs later)
 function! s:GitGutterLineColors() abort
     highlight GitGutterAddLine          ctermbg=22 guibg=#1a3a24
     highlight GitGutterChangeLine       ctermbg=58 guibg=#3a3a1a
@@ -56,7 +53,7 @@ nnoremap gP :GitGutterPreviewHunk<CR>
 " nnoremap gp :GitGutterPrevHunk<CR>
 " nnoremap gP :GitGutterPreviewHunk<CR>
 
-" Diff base comes from g:git_diff_base (see GitDiffBase() in vimrc-functions.vim, loaded later)
+" Diff base: g:git_diff_base (GitDiffBase() in vimrc-functions.vim)
 autocmd User GitDiffBaseChanged let g:gitgutter_diff_base = GitDiffBase() | silent! GitGutterAll
 
 " Aoivd hanging when loading big files

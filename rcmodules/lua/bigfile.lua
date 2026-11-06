@@ -1,7 +1,4 @@
--- Big files (> g:large_file_size): opened as plain text with everything per-buffer switched off,
--- like snacks.nvim's bigfile. Vim still reads the whole file into memory; for ~1GB use `tv`, less or head.
--- Off: filetype (so no syntax, ftplugin, treesitter, LSP, completion), undo history, swap, folds,
--- matchparen, indent lines, gitgutter, cursor-line blame.
+-- Big files (> g:large_file_size): plain text, per-buffer features off; for ~1GB use tv/less.
 
 vim.g.large_file_size = vim.g.large_file_size or 10 * 1024 * 1024
 

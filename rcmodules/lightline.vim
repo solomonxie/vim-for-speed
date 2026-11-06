@@ -37,8 +37,7 @@ function! FuncLightlineReadonly()
     return &readonly && &filetype !=# 'help' ? 'RO' : ''
 endfunction
 
-" Path relative to the project (git root of cwd) if the file is inside it,
-" otherwise the full path. Unlike %f, this doesn't depend on how the buffer was opened.
+" Path relative to the git root of cwd, else full; independent of how the buffer was opened
 let s:project_roots = {}  "Cache: cwd -> project root
 function! s:ProjectRoot() abort
     let l:cwd = getcwd()

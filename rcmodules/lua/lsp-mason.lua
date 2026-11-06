@@ -41,8 +41,7 @@ end
 -- Must follow the loop above, which resets each server's config.
 vim.lsp.config('bashls', { filetypes = { 'bash', 'sh', 'zsh' } })
 
--- basedpyright only for what pylsp lacks: call hierarchy (`o` in the lsp-tagbar). pylsp stays the
--- linter/completer, so basedpyright's diagnostics, hover and completion are switched off.
+-- basedpyright only for call hierarchy (`o` in lsp-tagbar); pylsp stays linter/completer.
 vim.lsp.enable('basedpyright')
 vim.lsp.config('basedpyright', {
     settings = {
@@ -62,10 +61,7 @@ vim.lsp.config('basedpyright', {
     end,
 })
 
--- gd / ,d: pylsp (jedi) first, and basedpyright when jedi finds nothing. Jedi resolves an import to
--- the wrong package when a tests/ copy shadows it (tests/use_cases/__init__.py hides the real
--- namespace package use_cases/), where basedpyright follows the real import rules. basedpyright's
--- definitionProvider stays off above so the two never show up twice; it still answers a direct ask.
+-- gd / ,d: pylsp first, then basedpyright (jedi misresolves imports shadowed by a tests/ copy).
 function _G.LspGotoDefinition()
     local buf, win = vim.api.nvim_get_current_buf(), vim.api.nvim_get_current_win()
     local order = {}
@@ -100,10 +96,9 @@ function _G.LspGotoDefinition()
     try(1)
 end
 
--- TypeScript 7 (the Go port) ships no tsserver.js for ts_ls to load, so a project on it gets its own
--- `tsc --lsp` instead, and ts_ls (with its bundled TypeScript) keeps every other project.
+-- TypeScript 7 (Go port) has no tsserver.js: such projects get `tsc --lsp`, others keep ts_ls.
 local ts_markers = { 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'bun.lockb', 'bun.lock', '.git' }
--- The folder holding the nearest node_modules/typescript (the one ts_ls would load) when it has no tsserver.js
+-- Nearest node_modules/typescript folder (what ts_ls would load) that has no tsserver.js
 local function ts7_root(bufnr)
     local name = vim.api.nvim_buf_get_name(bufnr)
     local found = vim.fs.find('node_modules/typescript', { path = vim.fs.dirname(name), upward = true, type = 'directory' })[1]

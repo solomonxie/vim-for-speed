@@ -1,9 +1,7 @@
 " Setup:
 "   $ brew install visidata
 
-" VisiData in a full-window terminal, like tig in tig.vim: q in vd comes back to the buffer.
-" :VisiData [file]  -> that file, else a data file path under the cursor, else the current one
-" (as saved: vd reads it from disk)
+" :VisiData [file]: file, else data path under the cursor, else current (as saved); q returns
 let s:data_exts = ['csv', 'tsv', 'tab', 'psv', 'json', 'jsonl', 'ndjson', 'parquet', 'arrow', 'feather',
     \ 'xlsx', 'xls', 'ods', 'sqlite', 'sqlite3', 'db', 'duckdb', 'h5', 'hdf5', 'xml', 'yaml', 'yml', 'fixed', 'dta', 'sas7bdat', 'sav']
 

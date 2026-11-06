@@ -189,8 +189,7 @@ local function write_pdbrc()
     end
 end
 
--- TARGETS: every debugger that gets the breakpoints. pudb's file is also the source of truth (read() above);
--- the rest are write-only. Other languages go here, see BACKLOG at the top.
+-- TARGETS: every debugger that gets the breakpoints; pudb's file is the source of truth, the rest write-only.
 local TARGETS = {
     write_pdbrc,
     -- write_delve_init,   -- placeholder: Go

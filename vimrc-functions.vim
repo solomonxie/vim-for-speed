@@ -75,9 +75,7 @@ endfunction
 " Remote links (GitOpen, GithubLink...): nvim-git-flow plugin (links.lua)
 
 
-" One session per project, named by its slugified full path, e.g.
-" ~/do.not.move/vim-sessions/Users-me-workspace-myproject.vim
-" Kept outside the repo: in a git worktree .git is a file, not a dir. Override with g:session_dir.
+" One session per project, named by slugified full path; outside the repo (worktree .git is a file); g:session_dir overrides
 function! GetSessionPath()
     let g:gitroot = trim(system("git rev-parse --show-toplevel"))
     let project = isdirectory(g:gitroot) ? g:gitroot : getcwd()
@@ -114,8 +112,7 @@ function! SaveSessionSimple()
             call add(steps, '$argadd ' . fnameescape(l:bufname))
         endif
     endfor
-    " Record others. Focus may be on NERDTree or an unnamed buffer, where a bare
-    " `edit` fails with E32, so fall back to the first recorded file.
+    " Others: focus may be NERDTree/unnamed buffer where bare `edit` fails (E32), so use the first recorded file
     let l:focused = expand('%:p')
     if index(l:files, l:focused) >= 0
         call add(steps, 'edit ' . fnameescape(l:focused))  "Set focused file
@@ -219,8 +216,7 @@ function! OpenLink(...)
 endfunction
 
 
-" gx: open the URL under the cursor up to the next space. <cfile> stops at '=', '&', '"' etc. and cut long URLs.
-" Runs `open` without a shell, so '#', '&', '|' in the URL need no escaping.
+" gx: open the URL under the cursor up to the next space (<cfile> cuts at = & "); no shell, so no escaping
 function! OpenUrlUnderCursor() abort
     let url = substitute(expand('<cWORD>'), '^.\{-}\ze\a\+://', '', '')
     if has('nvim')
@@ -431,8 +427,7 @@ function! SendContextToAI(...) range
 endfunction
 
 
-" Close a side window (quickfix, help...) and return to the window it was opened
-" from. Plain :close focuses whichever window takes over the space, often NERDTree.
+" Close a side window and return to where it was opened from (plain :close focuses NERDTree)
 function! CloseWindowGoBack() abort
     let l:prev = win_getid(winnr('#'))
     close
@@ -442,8 +437,7 @@ function! CloseWindowGoBack() abort
 endfunction
 
 
-" Quickfix/help etc.: close the window. Files: :Bclose (bclose.vim) shows the
-" alternate buffer and keeps the window, so the layout next to NERDTree survives.
+" Quickfix/help: close window. Files: :Bclose keeps the window so the NERDTree layout survives
 function! CloseBuffer() abort
     if luaeval("pcall(require, 'nvim-git-flow.diffsplit') and require('nvim-git-flow.diffsplit').close()")
         " a :DiffSplit tab: closed it, both buffers kept
@@ -455,8 +449,7 @@ function! CloseBuffer() abort
 endfunction
 
 
-" Git diff base (:ChangeGitDiffBase, g:git_diff_base, User GitDiffBaseChanged) and :DiffSplit:
-" nvim-git-flow plugin. GitDiffBase() stays for NERDTree (rcmodules/nerdtree.vim).
+" Git diff base and :DiffSplit: nvim-git-flow plugin; GitDiffBase() stays for NERDTree
 function! GitDiffBase() abort
     return empty(get(g:, 'git_diff_base', '')) ? 'HEAD' : g:git_diff_base
 endfunction

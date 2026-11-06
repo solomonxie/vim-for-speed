@@ -36,8 +36,7 @@ require('nvim-treesitter.configs').setup({
         enable = true,
         -- Disable for large files to improve performance
         disable = function(lang, buf)
-            -- markdown parses fast, and its regex fallback loses track after a code fence in a long
-            -- file (headings stop highlighting), so it gets a much higher limit: Claude transcripts
+            -- markdown: higher limit, regex fallback loses headings after a fence (Claude transcripts)
             local markdown = lang == 'markdown' or lang == 'markdown_inline'
             local max_bytes = markdown and 3 * 1024 * 1024 or 200 * 1024
             local max_lines = markdown and 50000 or 5000
@@ -73,10 +72,7 @@ require('nvim-treesitter.configs').setup({
     -- (Playground removed as it is deprecated)
 })
 
--- ]] [[ ][ [] jump between functions, ]c [c ]C [C between classes, only where they don't clobber
--- something: a filetype's own ]] / [[ (markdown headings, vim, sql, python...) are kept, and in diff
--- mode ]c / [c still jump between changes. A buffer whose language has no textobjects query keeps
--- Vim's defaults.
+-- Function/class jumps (]] [[ ]c [c ...) set per buffer; skip filetype-owned keys and diff mode.
 local function textobject_moves(buf)
     local lang = vim.treesitter.language.get_lang(vim.bo[buf].filetype)
     if not lang or not require('nvim-treesitter.query').has_query_files(lang, 'textobjects') then

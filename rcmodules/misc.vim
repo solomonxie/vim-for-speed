@@ -127,9 +127,9 @@ Plug 'solomonxie/nvim-marks', { 'branch': 'master' }
 "^ Marks saved to <g:nvim_marks_dir>/<repo>/marks.jsonl, set in ~/.vimrc-local.vim
 
 "REF: https://github.com/solomonxie/nvim-workfiles
-Plug 'solomonxie/nvim-workfiles', { 'branch': 'master' }
-"^ :WorkFiles, :WorkNew, :WorkDir, :WorkGrep. Root is g:workfiles_root, set in ~/.vimrc-local.vim
-nnoremap fw :WorkFiles<CR>
+" Plug 'solomonxie/nvim-workfiles', { 'branch': 'master' }
+""^ :WorkFiles, :WorkNew, :WorkDir, :WorkGrep. Root is g:workfiles_root, set in ~/.vimrc-local.vim
+" nnoremap fw :WorkFiles<CR>
 
 "REF: https://github.com/solomonxie/nvim-repo-browser
 Plug 'solomonxie/nvim-repo-browser', { 'branch': 'master', 'do': 'npm install && npm run build' }

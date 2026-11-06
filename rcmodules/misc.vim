@@ -15,9 +15,7 @@ Plug 'bronson/vim-visual-star-search', {'commit': '7c32edb'}
 
 "REF: https://github.com/tpope/vim-commentary
 Plug 'tpope/vim-commentary', {'commit': '64a654e'}  "Blazing fast!!
-" On ,c instead of gc.
-" The plugin adds its own gc/gcc/gcu maps unless gc is taken, so gc is held by a <Nop>
-" (it also replaces nvim's built-in gc).
+" ,c instead of gc: gc is held by a <Nop> so the plugin adds no gc maps (nor nvim's built-in)
 nnoremap gc <Nop>
 xmap <leader>c  <Plug>Commentary
 nmap <leader>c  <Plug>Commentary

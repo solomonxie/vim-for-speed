@@ -28,8 +28,7 @@ augroup TreesitterFolding
 augroup END
 
 
-" Autoread reloads (see checktime timer in nvimrc.vim) can leave highlights at
-" their old byte offsets, splitting words like t|ry. Re-parse from scratch.
+" Autoread reloads can leave stale highlight offsets (t|ry); re-parse from scratch.
 augroup TreesitterReloadFix
     autocmd!
     autocmd FileChangedShellPost * lua

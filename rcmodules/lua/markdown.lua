@@ -7,8 +7,7 @@ vim.opt.conceallevel = 0
 -- Don't conceal in the current line while editing
 vim.opt.concealcursor = 'nc'
 
--- Keep ``` fences and their language name visible: nvim-treesitter's markdown query conceals them
--- (whole lines too), and an `; extends` file can't undo that, so replace the query with a copy minus the conceals
+-- Keep ``` fences and language names visible: replace the query with a copy minus the conceals
 pcall(function()
     local parts = {}
     for _, path in ipairs(vim.treesitter.query.get_files('markdown', 'highlights')) do
@@ -65,4 +64,39 @@ vim.api.nvim_create_autocmd("FileType", {
         vim.cmd([[hi! @markup.quote.markdown gui=italic cterm=italic guifg=#a6adc8 ctermfg=146]])
         vim.cmd([[hi! @punctuation.special.markdown guifg=#94e2d5 ctermfg=116]])
     end
+})
+
+-- A line of only -- or --- (outside ``` blocks) is drawn as a full-width rule, like a separator.
+-- Overlay only: the text in the file is unchanged, and the cursor line still shows the dashes.
+local rule_ns = vim.api.nvim_create_namespace('markdown-rule')
+local function draw_rules(buf)
+    if not vim.api.nvim_buf_is_valid(buf) then return end
+    vim.api.nvim_buf_clear_namespace(buf, rule_ns, 0, -1)
+    local rule = string.rep('─', vim.o.columns)
+    local in_fence = false
+    for i, line in ipairs(vim.api.nvim_buf_get_lines(buf, 0, -1, false)) do
+        if line:match('^%s*```') then
+            in_fence = not in_fence
+        elseif not in_fence and line:match('^%s*%-%-%-?%s*$') then
+            vim.api.nvim_buf_set_extmark(buf, rule_ns, i - 1, 0, {virt_text = {{rule, 'Comment'}}, virt_text_pos = 'overlay'})
+        end
+    end
+end
+vim.api.nvim_create_autocmd('FileType', {
+    pattern = 'markdown',
+    callback = function(ev)
+        draw_rules(ev.buf)
+        vim.api.nvim_create_autocmd({'TextChanged', 'TextChangedI', 'BufWinEnter'}, {
+            buffer = ev.buf,
+            group = vim.api.nvim_create_augroup('markdown-rule-' .. ev.buf, {clear = true}),
+            callback = function() draw_rules(ev.buf) end,
+        })
+    end,
+})
+vim.api.nvim_create_autocmd('VimResized', {
+    callback = function()
+        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+            if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype == 'markdown' then draw_rules(buf) end
+        end
+    end,
 })

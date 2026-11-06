@@ -43,3 +43,10 @@ augroup END
 
 " Post-Vimplug setup
 let g:lua_configs += ['~/.config/nvim/rcmodules/lua/treesitter.lua']
+
+" Claude Code transcripts saved as markdown: Claude's part of each prompt sits between
+" <!-- claude {{{ --> and <!-- }}} -->, folded on open; the prompts (# headings) stay visible.
+augroup ClaudeTranscriptFolding
+    autocmd!
+    autocmd BufReadPost,BufNewFile *-claude-*.md setlocal foldmethod=marker foldlevel=0
+augroup END
